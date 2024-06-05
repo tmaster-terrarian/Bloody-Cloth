@@ -9,6 +9,8 @@ public class Main : Game
     private GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch;
 
+    private SpriteFont _font;
+
     public Main()
     {
         _graphics = new GraphicsDeviceManager(this);
@@ -27,7 +29,7 @@ public class Main : Game
     {
         _spriteBatch = new SpriteBatch(GraphicsDevice);
 
-        // TODO: use this.Content to load your game content here
+        _font = Content.Load<SpriteFont>("Fonts/Default");
     }
 
     protected override void Update(GameTime gameTime)
@@ -44,7 +46,11 @@ public class Main : Game
     {
         GraphicsDevice.Clear(Color.CornflowerBlue);
 
-        // TODO: Add your drawing code here
+        _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
+
+        _spriteBatch.DrawString(_font, "You are a terrible person...", new(20, 20), Color.White, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+
+        _spriteBatch.End();
 
         base.Draw(gameTime);
     }
