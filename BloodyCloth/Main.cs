@@ -46,7 +46,7 @@ public class Main : Game
     {
         GraphicsDevice.Clear(Color.CornflowerBlue);
 
-        _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
+        _spriteBatch.Begin(samplerState: SamplerState.LinearClamp);
 
         _spriteBatch.DrawString(_font, "You are a terrible person...", new(20, 20), Color.White, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
 
