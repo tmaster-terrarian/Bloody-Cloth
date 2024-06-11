@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+
 using Microsoft.Xna.Framework;
 
 namespace BloodyCloth.Ecs.Components
@@ -38,6 +39,11 @@ namespace BloodyCloth.Ecs.Components
             Point origin = Entity.GetComponent<Sprite>()?.origin ?? Point.Zero;
             bbox.X -= origin.X;
             bbox.Y -= origin.Y;
+        }
+
+        public override void Update()
+        {
+            
         }
 
         public void Move(float x, float y)

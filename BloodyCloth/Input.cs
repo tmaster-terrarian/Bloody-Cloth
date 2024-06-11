@@ -8,7 +8,9 @@ public static class Input
     private static KeyboardState currentKeyboardState;
     private static KeyboardState previousKeyboardState;
 
-    public static KeyboardState GetKeyboardState()
+    public static KeyboardState KeyboardState => currentKeyboardState;
+
+    public static KeyboardState RefreshKeyboardState()
     {
         previousKeyboardState = currentKeyboardState;
         currentKeyboardState = Keyboard.GetState();
@@ -19,7 +21,9 @@ public static class Input
     private static MouseState currentMouseState;
     private static MouseState previousMouseState;
 
-    public static MouseState GetMouseState()
+    public static MouseState MouseState => currentMouseState;
+
+    public static MouseState RefreshMouseState()
     {
         previousMouseState = currentMouseState;
         currentMouseState = Mouse.GetState();
@@ -30,9 +34,9 @@ public static class Input
     private static readonly GamePadState[] currentGamepadStates = new GamePadState[4];
     private static readonly GamePadState[] previousGamepadStates = new GamePadState[4];
 
-    public static GamePadState GetGamePadState() => GetGamePadState(PlayerIndex.One);
+    public static GamePadState RefreshGamePadState() => RefreshGamePadState(PlayerIndex.One);
 
-    public static GamePadState GetGamePadState(PlayerIndex index)
+    public static GamePadState RefreshGamePadState(PlayerIndex index)
     {
         for(var i = 0; i < 4; i++)
         {

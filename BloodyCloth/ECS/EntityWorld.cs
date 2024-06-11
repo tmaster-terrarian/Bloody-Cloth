@@ -17,11 +17,14 @@ public class EntityWorld : IDisposable
 
     public bool IsDisposed => _disposed;
 
-    public Entity Create(Entity entity, Component[]? components = null)
+    public Entity Create(Component[]? components = null)
     {
-        entity.ID = _entityID++;
+        var entity = new Entity
+        {
+            ID = _entityID++
+        };
 
-        if(components != null)
+        if (components != null)
         foreach(var component in components)
         {
             entity.AddComponent(component);

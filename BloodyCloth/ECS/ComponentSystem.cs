@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-
+using System.Linq;
 using Microsoft.Xna.Framework;
 
 namespace BloodyCloth.Ecs;
@@ -8,6 +8,8 @@ namespace BloodyCloth.Ecs;
 public abstract class ComponentSystem<T> where T : Component
 {
     protected static List<T> _activeComponents = new List<T>();
+
+    public static List<T> Components => _activeComponents;
 
     public static void Register(T component)
     {

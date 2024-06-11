@@ -6,8 +6,8 @@ using Microsoft.Xna.Framework.Graphics;
 
 using BloodyCloth.Ecs;
 using BloodyCloth.Ecs.Systems;
-using System.Linq;
 using BloodyCloth.Ecs.Components;
+using BloodyCloth.Utils;
 
 namespace BloodyCloth;
 
@@ -20,6 +20,8 @@ public class World : IDisposable, IDrawable
     private Dictionary<string, Texture2D> _textureCache;
 
     private SpriteBatch _spriteBatch;
+
+    public SpriteBatch SpriteBatch { get => _spriteBatch; set => _spriteBatch = value; }
 
     protected Tile[,] _tiles;
 
@@ -90,10 +92,8 @@ public class World : IDisposable, IDrawable
     public event EventHandler<EventArgs> DrawOrderChanged;
     public event EventHandler<EventArgs> VisibleChanged;
 
-    public World(GraphicsDevice graphicsDevice)
+    public World()
     {
-        _spriteBatch = new(graphicsDevice);
-
         width = 40;
         height = 23;
         _tiles = new Tile[width, height];
@@ -174,7 +174,7 @@ public class World : IDisposable, IDrawable
 
     public void Update()
     {
-        PlayerControlsSystem.Update();
+        PlayerBehaviorSystem.Update();
         TransformSystem.Update();
         ActorSystem.Update();
         SpriteSystem.Update();
@@ -182,7 +182,7 @@ public class World : IDisposable, IDrawable
 
     public void Draw(GameTime gameTime)
     {
-        _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
+        if(_spriteBatch is null) return;
 
         for(int x = 0; x < width; x++)
         {
@@ -194,11 +194,7 @@ public class World : IDisposable, IDrawable
                 Texture2D texture = Main.GetContent<Texture2D>("Images/Tiles/" + tile.id);
                 if(texture == null) continue;
 
-                Rectangle UV = Tile.GetShapeUV(tile.shape);
-                UV.X *= tileSize;
-                UV.Y *= tileSize;
-                UV.Width *= tileSize;
-                UV.Height *= tileSize;
+                Rectangle UV = Tile.GetShapeUV(tile.shape).ScalePosition(tileSize);
 
                 _spriteBatch.Draw(
                     texture,
@@ -214,12 +210,10 @@ public class World : IDisposable, IDrawable
             }
         }
 
-        PlayerControlsSystem.Draw();
+        PlayerBehaviorSystem.Draw();
         TransformSystem.Draw();
         ActorSystem.Draw();
         SpriteSystem.Draw();
-
-        _spriteBatch.End();
     }
 
     public void DrawSprite(Texture2D texture, Vector2 position, Rectangle? sourceRectangle, Color color, float rotation, Vector2 origin, Vector2 scale, SpriteEffects effects, float layerDepth)
@@ -232,7 +226,7 @@ public class World : IDisposable, IDrawable
         _spriteBatch.Draw(texture, destinationRectangle, sourceRectangle, color, rotation, origin, effects, layerDepth);
     }
 
-    public void DrawSprite(Ecs.Components.Sprite sprite, Ecs.Components.Transform transform)
+    public void DrawSprite(Sprite sprite, Transform transform)
     {
         _spriteBatch.Draw(sprite.texture, transform.position.ToVector2(), sprite.sourceRectangle, sprite.color, transform.rotation, sprite.origin.ToVector2(), transform.scale, sprite.spriteEffects, sprite.LayerDepth);
     }
@@ -250,24 +244,40 @@ public class World : IDisposable, IDrawable
 
     public Entity? GetEntityWithId(uint id) => _entityWorld.GetEntityWithId(id);
 
+    public List<Actor> GetAllActorComponents()
+    {
+        List<Actor> actors = new();
+        foreach(var actor in ActorSystem.Components)
+        {
+            if(!actor.IsEnabled) continue;
+
+            actors.Add(actor);
+        }
+        return actors;
+    }
+
     public List<Entity> GetAllEntitiesWithComponent<T>() where T : Component
     {
         List<Entity> entities = new();
         foreach(var entity in _entityWorld.Entities)
         {
+            if(!entity.IsEnabled) continue;
+
             if(entity.HasComponent<T>()) entities.Add(entity);
         }
         return entities;
     }
 
-    public Entity? SolidPlace(Rectangle bbox, Point position)
+    public Solid? SolidPlace(Rectangle bbox, Point position)
     {
         foreach(var entity in _entityWorld.Entities)
         {
+            if(!entity.IsEnabled) continue;
+
             Solid solid = entity.GetComponent<Solid>();
             if(solid is not null)
             {
-                if(solid.WorldBoundingBox.Intersects(new(bbox.Location + position, bbox.Size))) return entity;
+                if(solid.Collidable && solid.WorldBoundingBox.Intersects(new(bbox.Location + position, bbox.Size))) return solid;
             }
         }
         return null;

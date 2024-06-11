@@ -8,7 +8,7 @@ namespace BloodyCloth.Ecs.Components
     {
         int _layerDepth = 0;
 
-        public Texture2D texture = null;
+        public Texture2D? texture = null;
         public Rectangle? sourceRectangle = null;
         public Point origin = Point.Zero;
         public Color color = Color.White;
@@ -16,8 +16,8 @@ namespace BloodyCloth.Ecs.Components
 
         public float LayerDepth
         {
-            get => (float)_layerDepth / 10000;
-            set => _layerDepth = Extensions.Floor(value * 10000);
+            get => 1 - ((float)(_layerDepth + 10000) / 20000);
+            set => _layerDepth = Extensions.Floor((1 - MathHelper.Clamp(value, 0, 1)) * 20000 - 10000);
         }
 
         public Sprite()
