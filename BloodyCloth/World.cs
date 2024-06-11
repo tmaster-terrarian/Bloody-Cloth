@@ -176,6 +176,8 @@ public class World : IDisposable, IDrawable
     {
         PlayerBehaviorSystem.Update();
         TransformSystem.Update();
+        OscillatePositionSystem.Update();
+        SolidSystem.Update();
         ActorSystem.Update();
         SpriteSystem.Update();
     }
@@ -212,6 +214,8 @@ public class World : IDisposable, IDrawable
 
         PlayerBehaviorSystem.Draw();
         TransformSystem.Draw();
+        OscillatePositionSystem.Draw();
+        SolidSystem.Draw();
         ActorSystem.Draw();
         SpriteSystem.Draw();
     }

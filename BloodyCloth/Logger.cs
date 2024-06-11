@@ -17,13 +17,13 @@ public class Logger
     public void LogInfo(object message)
     {
         var date = DateTime.Now - _startDate;
-        Console.WriteLine($"[{date.Hours}:{date.Minutes}:{date.Seconds}] [{Name}/INFO] {message}");
+        Console.WriteLine($"[{date.Hours}:{date.Minutes}:{date.Seconds}] [{Name}/INFO] {message ?? "null"}");
     }
 
     public void LogError(object message)
     {
         var date = DateTime.Now - _startDate;
-        Console.WriteLine($"[{date.Hours}:{date.Minutes}:{date.Seconds}] [{Name}/ERROR] {message}");
+        Console.WriteLine($"[{date.Hours}:{date.Minutes}:{date.Seconds}] [{Name}/ERROR] {message ?? "null"}");
     }
 
     public void LogWarning(object message)

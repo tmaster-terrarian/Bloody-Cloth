@@ -40,8 +40,6 @@ namespace BloodyCloth.Ecs.Components
 
         public override void OnCreate()
         {
-            if(Entity.HasComponent<Solid>()) throw new Exception("Actors and Solids are mutually exclusive");
-
             transform = Entity.GetComponent<Transform>();
 
             Point origin = Entity.GetComponent<Sprite>()?.origin ?? Point.Zero;

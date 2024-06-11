@@ -17,13 +17,21 @@ namespace BloodyCloth.Ecs.Components
 
         Vector2 velocity = Vector2.Zero;
 
-        public Rectangle BoundingBox => bbox;
+        public Rectangle BoundingBox
+        {
+            get => bbox;
+            set {
+                this.bbox = new(value.Location - (Entity?.GetComponent<Sprite>()?.origin ?? Point.Zero), value.Size);
+            }
+        }
 
         public Rectangle WorldBoundingBox => new(bbox.X + transform?.position.X ?? bbox.X, bbox.Y + transform?.position.Y ?? bbox.Y, bbox.Width, bbox.Height);
 
         public Vector2 Velocity { get => velocity; set => velocity = value; }
 
         public bool Collidable { get; protected set; }
+
+        public bool DefaultBehavior { get; set; }
 
         public Solid()
         {
@@ -32,8 +40,6 @@ namespace BloodyCloth.Ecs.Components
 
         public override void OnCreate()
         {
-            if(Entity.HasComponent<Actor>()) throw new Exception("Actors and Solids are mutually exclusive");
-
             transform = Entity.GetComponent<Transform>();
 
             Point origin = Entity.GetComponent<Sprite>()?.origin ?? Point.Zero;
@@ -43,7 +49,9 @@ namespace BloodyCloth.Ecs.Components
 
         public override void Update()
         {
-            
+            if(!DefaultBehavior) return;
+
+            Move(velocity.X, velocity.Y);
         }
 
         public void Move(float x, float y)
