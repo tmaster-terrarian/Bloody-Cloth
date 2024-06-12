@@ -71,6 +71,11 @@ public class Main : Game
         IsFixedTimeStep = true;
     }
 
+    public void ForcedInit()
+    {
+        Initialize();
+    }
+
     // for future me: it seems that in general, most things arent ready yet in the constructor, so just use Initialize <3
     protected override void Initialize()
     {
@@ -116,6 +121,7 @@ public class Main : Game
         }
 
         if(!Headless) base.Initialize();
+        else LoadContent();
 
         _logger.LogInfo(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify)
@@ -141,7 +147,7 @@ public class Main : Game
 
     public void ForcedUpdate()
     {
-        Update(null);
+        Update(new GameTime());
     }
 
     protected override void Update(GameTime gameTime)
@@ -166,7 +172,7 @@ public class Main : Game
 
         _world.Update();
 
-        base.Update(gameTime);
+        if(!Headless) base.Update(gameTime);
 
         if(Headless) SuppressDraw();
     }

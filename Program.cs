@@ -13,6 +13,13 @@ try
 catch(NoSuitableGraphicsDeviceException e)
 {
     BloodyCloth.Main.Logger.LogError("woops: " + e);
+    game.Headless = true;
+    game.ForcedInit();
+    while(true)
+    {
+        game.ForcedUpdate();
+        System.Threading.Thread.Sleep(170);
+    }
 }
 #else
 game.Run();
