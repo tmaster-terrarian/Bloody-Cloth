@@ -1,0 +1,59 @@
+Index: MonoGame.Framework/Game.cs
+===================================================================
+--- MonoGame.Framework/Game.cs	(revision 23517)
++++ MonoGame.Framework/Game.cs	(working copy)
+@@ -176,6 +176,11 @@
+             get { return _components; }
+         }
+ 
++        public void SetHeadless(bool value)
++        {
++            Platform.Headless = value;
++        }
++
+         public TimeSpan InactiveSleepTime
+         {
+             get { return _inactiveSleepTime; }
+@@ -677,6 +682,13 @@
+         internal void DoInitialize()
+         {
+             AssertNotDisposed();
++
++            if (Platform.Headless)
++            {
++                Initialize();
++                return;
++            }
++
+             Platform.BeforeInitialize();
+             Initialize();
+ 
+Index: MonoGame.Framework/GamePlatform.cs
+===================================================================
+--- MonoGame.Framework/GamePlatform.cs	(revision 23517)
++++ MonoGame.Framework/GamePlatform.cs	(working copy)
+@@ -54,6 +54,8 @@
+             get; private set;
+         }
+ 
++        internal bool Headless = false;
++
+         private bool _isActive;
+         public bool IsActive
+         {
+Index: MonoGame.Framework/SDL/SDLGamePlatform.cs
+===================================================================
+--- MonoGame.Framework/SDL/SDLGamePlatform.cs	(revision 23517)
++++ MonoGame.Framework/SDL/SDLGamePlatform.cs	(working copy)
+@@ -99,7 +99,10 @@
+ 
+         public override void RunLoop()
+         {
+-            Sdl.Window.Show(Window.Handle);
++            if (!Headless)
++            {
++                Sdl.Window.Show(Window.Handle);
++            }
+ 
+             while (true)
+             {

@@ -46,37 +46,48 @@ public class Main : Game
         public const string Version = "0.1.0.4";
     }
 
+    public bool Headless { get; set; }
+
     public Main()
     {
-        _graphics = new GraphicsDeviceManager(this)
+        if(Headless)
         {
-            PreferMultiSampling = false,
-            SynchronizeWithVerticalRetrace = true,
-            PreferredBackBufferWidth = _screenSize.X * _pixelScale,
-            PreferredBackBufferHeight = _screenSize.Y * _pixelScale,
-        };
-
-        Content.RootDirectory = "Content";
-        IsMouseVisible = true;
-        IsFixedTimeStep = true;
+            Content = HeadlessRuntimeHelper.GetContentManager();
+        }
+        else
+        {
+            _graphics = new GraphicsDeviceManager(this)
+            {
+                PreferMultiSampling = false,
+                SynchronizeWithVerticalRetrace = true,
+                PreferredBackBufferWidth = _screenSize.X * _pixelScale,
+                PreferredBackBufferHeight = _screenSize.Y * _pixelScale,
+            };
+        }
 
         _content = Content;
+        _content.RootDirectory = "Content";
+        IsMouseVisible = true;
+        IsFixedTimeStep = true;
     }
 
     // for future me: it seems that in general, most things arent ready yet in the constructor, so just use Initialize <3
     protected override void Initialize()
     {
-        _renderTarget = new RenderTarget2D(GraphicsDevice, _screenSize.X, _screenSize.Y);
-
-        Window.Position = new((GraphicsDevice.DisplayMode.Width - _graphics.PreferredBackBufferWidth) / 2, (GraphicsDevice.DisplayMode.Height - _graphics.PreferredBackBufferHeight) / 2);
-
-        if(GraphicsDevice.DisplayMode.Height == _graphics.PreferredBackBufferHeight)
+        if(!Headless)
         {
-            Window.Position = Point.Zero;
-            Window.IsBorderless = true;
-        }
+            _renderTarget = new RenderTarget2D(GraphicsDevice, _screenSize.X, _screenSize.Y);
 
-        _graphics.ApplyChanges();
+            Window.Position = new((GraphicsDevice.DisplayMode.Width - _graphics.PreferredBackBufferWidth) / 2, (GraphicsDevice.DisplayMode.Height - _graphics.PreferredBackBufferHeight) / 2);
+
+            if(GraphicsDevice.DisplayMode.Height == _graphics.PreferredBackBufferHeight)
+            {
+                Window.Position = Point.Zero;
+                Window.IsBorderless = true;
+            }
+
+            _graphics.ApplyChanges();
+        }
 
         _world = new World();
 
@@ -104,7 +115,7 @@ public class Main : Game
             silly.AddComponent(new OscillatePosition());
         }
 
-        base.Initialize();
+        if(!Headless) base.Initialize();
 
         _logger.LogInfo(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify)
@@ -115,14 +126,22 @@ public class Main : Game
 
     protected override void LoadContent()
     {
-        _spriteBatch = new SpriteBatch(GraphicsDevice);
-        _world.SpriteBatch = _spriteBatch;
+        if(!Headless)
+        {
+            _spriteBatch = new SpriteBatch(GraphicsDevice);
+            _world.SpriteBatch = _spriteBatch;
+        }
 
         OnePixel = Content.Load<Texture2D>("Images/Other/onepixel");
 
         _font = Content.Load<SpriteFont>("Fonts/default");
 
         PlayerBehavior.CreatePlayerEntity(PlayerIndex.One);
+    }
+
+    public void ForcedUpdate()
+    {
+        Update(null);
     }
 
     protected override void Update(GameTime gameTime)
@@ -148,10 +167,14 @@ public class Main : Game
         _world.Update();
 
         base.Update(gameTime);
+
+        if(Headless) SuppressDraw();
     }
 
     protected override void Draw(GameTime gameTime)
     {
+        if(Headless) return;
+
         GraphicsDevice.SetRenderTarget(_renderTarget);
         GraphicsDevice.Clear(Color.CornflowerBlue);
         _spriteBatch.Begin(samplerState: SamplerState.PointWrap);

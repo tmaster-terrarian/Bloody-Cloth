@@ -16,3 +16,6 @@ dotnet_diagnostic.CS8632.severity = suggestion
 
 # CS0436: Type conflicts with imported type
 dotnet_diagnostic.CS0436.severity = suggestion
+
+# CS4014: Because this call is not awaited, execution of the current method continues before the call is completed
+dotnet_diagnostic.CS4014.severity = suggestion
