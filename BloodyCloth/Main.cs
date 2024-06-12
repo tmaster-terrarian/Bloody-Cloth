@@ -136,11 +136,11 @@ public class Main : Game
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             _world.SpriteBatch = _spriteBatch;
+
+            _font = Content.Load<SpriteFont>("Fonts/default");
         }
 
         OnePixel = Content.Load<Texture2D>("Images/Other/onepixel");
-
-        _font = Content.Load<SpriteFont>("Fonts/default");
 
         PlayerBehavior.CreatePlayerEntity(PlayerIndex.One);
     }
