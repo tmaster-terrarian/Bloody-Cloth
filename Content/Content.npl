@@ -28,18 +28,21 @@
 				"PremultiplyAlpha": "True",
 				"TextureFormat": "Compressed"
 			}
-		}
-		// "sfx":
-		// {
+		},
+		// "sfx": {
 		// 	"path": "Audio/Sfx/*.wav",
 		// 	"recursive": "True",
 		// 	"action": "build",
 		// 	"importer": "WavImporter",
 		// 	"processor": "SoundEffectProcessor",
-		// 	"processorParam":
-		// 	{
+		// 	"processorParam": {
 		// 		"Quality": "Best"
 		// 	}
-		// }
+		// },
+		"levels": {
+			"path": "Levels/*.ldtk",
+			"recursive": "True",
+			"action": "copy"
+		}
 	}
 }

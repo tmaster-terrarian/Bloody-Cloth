@@ -165,7 +165,7 @@ namespace BloodyCloth.Ecs.Components
             {
                 velocity.Y = 0;
                 velocity.X = 0;
-                Entity.GetComponent<Transform>().position = Main.MousePosition;
+                Entity.GetComponent<Transform>().position = Main.WorldMousePosition;
             }
 
             actor.Velocity = velocity;

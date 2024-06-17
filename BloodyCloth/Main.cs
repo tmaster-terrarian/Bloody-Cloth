@@ -6,6 +6,8 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
+using LDtk;
+
 using BloodyCloth.Ecs.Components;
 
 namespace BloodyCloth;
@@ -20,18 +22,24 @@ public class Main : Game
     private static Point _screenSize = new Point(640, 360);
     private static World _world;
     private static bool _paused;
+    private static Camera camera;
 
     private SpriteFont _font;
     private RenderTarget2D _renderTarget;
+    private Ecs.Entity player;
+    private LDtkLevel level;
 
     public static Logger Logger => _logger;
     public static int PixelScale => _pixelScale;
     public static Point ScreenSize => _screenSize;
     public static World World => _world;
     public static bool IsPaused => _paused;
+    public static Camera Camera => camera;
 
     public static Point MousePosition => new(Mouse.GetState().X / _pixelScale, Mouse.GetState().Y / _pixelScale);
     public static Point MousePositionClamped => new(MathHelper.Clamp(Mouse.GetState().X / _pixelScale, 0, _screenSize.X - 1), MathHelper.Clamp(Mouse.GetState().Y / _pixelScale, 0, _screenSize.Y - 1));
+
+    public static Point WorldMousePosition => MousePosition + camera.Position.ToPoint();
 
     public static Texture2D OnePixel { get; private set; }
 
@@ -56,11 +64,10 @@ public class Main : Game
             PreferredBackBufferHeight = _screenSize.Y * _pixelScale,
         };
 
-        Content.RootDirectory = "Content";
+        _content = Content;
+        _content.RootDirectory = "Content";
         IsMouseVisible = true;
         IsFixedTimeStep = true;
-
-        _content = Content;
     }
 
     // for future me: it seems that in general, most things arent ready yet in the constructor, so just use Initialize <3
@@ -77,6 +84,11 @@ public class Main : Game
         }
 
         _graphics.ApplyChanges();
+
+        camera = new Camera(GraphicsDevice);
+
+        OnePixel = new Texture2D(GraphicsDevice, 1, 1);
+        OnePixel.SetData(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF });
 
         _world = new World();
 
@@ -106,6 +118,8 @@ public class Main : Game
 
         base.Initialize();
 
+        // file = LDtkFile.FromFile("c:/Users/Econn/AppData/Local/Programs/ldtk/extraFiles/samples/Typical_2D_platformer_example.ldtk");
+
         _logger.LogInfo(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify)
                 + Path.DirectorySeparatorChar + AppMetadata.Name + Path.DirectorySeparatorChar
@@ -118,11 +132,9 @@ public class Main : Game
         _spriteBatch = new SpriteBatch(GraphicsDevice);
         _world.SpriteBatch = _spriteBatch;
 
-        OnePixel = Content.Load<Texture2D>("Images/Other/onepixel");
-
         _font = Content.Load<SpriteFont>("Fonts/default");
 
-        PlayerBehavior.CreatePlayerEntity(PlayerIndex.One);
+        player = PlayerBehavior.CreatePlayerEntity(PlayerIndex.One);
     }
 
     protected override void Update(GameTime gameTime)
@@ -133,7 +145,7 @@ public class Main : Game
 
         if(!IsActive && !_paused)
         {
-            // pause game
+            // pause game on unfocus
         }
 
         if(Input.GetPressed(Keys.F1))
@@ -147,6 +159,10 @@ public class Main : Game
 
         _world.Update();
 
+        camera.Zoom = 1;
+        camera.Position += ((player.GetComponent<Transform>().position.ToVector2() + new Vector2(-Main.ScreenSize.X / 2f, -Main.ScreenSize.Y / 2f)) - camera.Position) / 4f;
+        camera.Update();
+
         base.Update(gameTime);
     }
 
@@ -154,7 +170,7 @@ public class Main : Game
     {
         GraphicsDevice.SetRenderTarget(_renderTarget);
         GraphicsDevice.Clear(Color.CornflowerBlue);
-        _spriteBatch.Begin(samplerState: SamplerState.PointWrap);
+        _spriteBatch.Begin(samplerState: SamplerState.PointWrap, transformMatrix: camera.Transform);
 
         _spriteBatch.DrawStringBold(_font, "The quick brown fox jumps over the lazy dog.", new(10, 10), Color.White, 2, 0, Vector2.Zero, 0.5f, SpriteEffects.None, 0);
         _spriteBatch.DrawString(_font, "The quick brown fox jumps over the lazy dog.", new(10, 20), Color.White, 0, Vector2.Zero, 0.5f, SpriteEffects.None, 0);
