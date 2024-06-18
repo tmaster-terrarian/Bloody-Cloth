@@ -5,4 +5,4 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-[assembly: SuppressMessage("Style", "IDE0090:Use 'new(...)'", Justification = "<Pending>")]
+[assembly: SuppressMessage("Style", "IDE0090:Use 'new(...)'", Justification = "You know sometimes I just dont feel like it")]

@@ -90,13 +90,15 @@ public class Main : Game
         OnePixel = new Texture2D(GraphicsDevice, 1, 1);
         OnePixel.SetData(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF });
 
-        _world = new World();
+        _world = new World(120, 45);
 
         _world.SetTile("stone", new(10, 13));
         _world.SetTile("stone", new(11, 13));
         _world.SetTile("stone", new(12, 13));
         _world.SetTile("stone", new(13, 13));
         _world.SetTile("stone", new(14, 13));
+
+        _world.SetTile("stone", new(119, 44));
 
         {
             var silly = _world.Entities.Create();
@@ -160,7 +162,8 @@ public class Main : Game
         _world.Update();
 
         camera.Zoom = 1;
-        camera.Position += ((player.GetComponent<Transform>().position.ToVector2() + new Vector2(-Main.ScreenSize.X / 2f, -Main.ScreenSize.Y / 2f)) - camera.Position) / 4f;
+        camera.Position += (player.GetComponent<Transform>().position.ToVector2() + new Vector2(-ScreenSize.X / 2f, -ScreenSize.Y / 2f) - camera.Position) / 4f;
+        camera.Position = Vector2.Clamp(camera.Position, Vector2.Zero, (World.Bounds.Size.ToVector2() * World.tileSize) - ScreenSize.ToVector2());
         camera.Update();
 
         base.Update(gameTime);

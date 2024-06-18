@@ -42,4 +42,14 @@ public static class Extensions
     {
         return value ? 1 : 0;
     }
+
+    public static Point Divide(this Point value, int div)
+    {
+        return new(value.X / div, value.Y / div);
+    }
+
+    public static Point Clamp(this Point value, Point min, Point max)
+    {
+        return new(MathHelper.Clamp(value.X, min.X, max.X), MathHelper.Clamp(value.Y, min.Y, max.Y));
+    }
 }

@@ -92,26 +92,26 @@ public class World : IDisposable, IDrawable
     public event EventHandler<EventArgs> DrawOrderChanged;
     public event EventHandler<EventArgs> VisibleChanged;
 
-    public World()
+    public World(int width, int height)
     {
-        width = 40;
-        height = 23;
-        _tiles = new Tile[width, height];
+        this.width = MathHelper.Max(width, 80);
+        this.height = MathHelper.Max(height, 45);
+        _tiles = new Tile[this.width, this.height];
 
         _textureCache = new Dictionary<string, Texture2D>
         {
             { "air", null }
         };
 
-        for(int x = 0; x < width; x++)
+        for(int x = 0; x < this.width; x++)
         {
-            for(int y = 0; y < height; y++)
+            for(int y = 0; y < this.height; y++)
             {
                 _tiles[x, y] = new Tile();
             }
         }
 
-        _collisions = new Rectangle[width, height];
+        _collisions = new Rectangle[this.width, this.height];
     }
 
     public Rectangle ValidateArea(Rectangle rectangle)

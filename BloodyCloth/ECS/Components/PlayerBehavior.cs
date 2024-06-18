@@ -1,14 +1,15 @@
 using System;
 using System.Collections.Generic;
-using AsepriteDotNet;
-using BloodyCloth.Utils;
+
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
+using BloodyCloth.Utils;
+
 namespace BloodyCloth.Ecs.Components
 {
-    [System.Serializable]
+    [Serializable]
     public class PlayerBehavior : Component
     {
         List<Texture2D> textures = null;
@@ -40,6 +41,8 @@ namespace BloodyCloth.Ecs.Components
         public PlayerInputMapping InputMapping => _inputMapping;
 
         public bool OnGround { get => _onGround; set => _onGround = value; }
+
+        public Point Center => Entity.GetComponent<Actor>().WorldBoundingBox.Center;
 
         public PlayerBehavior()
         {
