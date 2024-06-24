@@ -9,6 +9,7 @@ using Microsoft.Xna.Framework.Input;
 using LDtk;
 
 using BloodyCloth.Ecs.Components;
+using BloodyCloth.IO;
 
 namespace BloodyCloth;
 
@@ -27,7 +28,9 @@ public class Main : Game
     private SpriteFont _font;
     private RenderTarget2D _renderTarget;
     private Ecs.Entity player;
-    private LDtkLevel level;
+    private LDtkLevel lDtkLevel;
+    private LDtkFile lDtkFile;
+    private LDtkWorld lDtkWorld;
 
     public static Logger Logger => _logger;
     public static int PixelScale => _pixelScale;
@@ -51,7 +54,7 @@ public class Main : Game
     public static class AppMetadata
     {
         public const string Name = "BloodyCloth";
-        public const string Version = "0.1.0.4";
+        public const string Version = "0.1.0.5";
     }
 
     public Main()
@@ -120,12 +123,10 @@ public class Main : Game
 
         base.Initialize();
 
-        // file = LDtkFile.FromFile("c:/Users/Econn/AppData/Local/Programs/ldtk/extraFiles/samples/Typical_2D_platformer_example.ldtk");
+        lDtkFile = LDtkFile.FromFile(PathBuilder.LocalAppdataPath + "/Programs/ldtk/extraFiles/samples/Typical_2D_platformer_example.ldtk");
+        lDtkWorld = lDtkFile.LoadSingleWorld();
 
-        _logger.LogInfo(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify)
-                + Path.DirectorySeparatorChar + AppMetadata.Name + Path.DirectorySeparatorChar
-        );
+        _logger.LogInfo(new PathBuilder{AppendFinalSeparator = true}.Create(PathBuilder.LocalAppdataPath, AppMetadata.Name));
         _logger.LogInfo(AppMetadata.Version);
     }
 
