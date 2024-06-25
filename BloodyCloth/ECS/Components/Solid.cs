@@ -77,6 +77,15 @@ namespace BloodyCloth.Ecs.Components
                     transform.position.X += moveX;
                     if(moveX > 0)
                     {
+                        if(this.WorldBoundingBox.Intersects(Main.Player.Hitbox))
+                        {
+                            Main.Player.MoveX(this.WorldBoundingBox.Right - Main.Player.Left.X, Main.Player.Squish);
+                        }
+                        else if(Main.Player.IsRiding(this))
+                        {
+                            Main.Player.MoveX(moveX, null);
+                        }
+
                         foreach(var entity in allActors)
                         {
                             var actor = entity.GetComponent<Actor>();
@@ -94,6 +103,15 @@ namespace BloodyCloth.Ecs.Components
                     }
                     else
                     {
+                        if(this.WorldBoundingBox.Intersects(Main.Player.Hitbox))
+                        {
+                            Main.Player.MoveX(this.WorldBoundingBox.Left - Main.Player.Right.X, Main.Player.Squish);
+                        }
+                        else if(Main.Player.IsRiding(this))
+                        {
+                            Main.Player.MoveX(moveX, null);
+                        }
+
                         foreach(var entity in allActors)
                         {
                             var actor = entity.GetComponent<Actor>();
@@ -117,6 +135,15 @@ namespace BloodyCloth.Ecs.Components
                     transform.position.Y += moveY;
                     if(moveY > 0)
                     {
+                        if(this.WorldBoundingBox.Intersects(Main.Player.Hitbox))
+                        {
+                            Main.Player.MoveY(this.WorldBoundingBox.Bottom - Main.Player.Top.Y, Main.Player.Squish);
+                        }
+                        else if(Main.Player.IsRiding(this))
+                        {
+                            Main.Player.MoveY(moveY, null);
+                        }
+
                         foreach(var entity in allActors)
                         {
                             var actor = entity.GetComponent<Actor>();
@@ -134,6 +161,15 @@ namespace BloodyCloth.Ecs.Components
                     }
                     else
                     {
+                        if(this.WorldBoundingBox.Intersects(Main.Player.Hitbox))
+                        {
+                            Main.Player.MoveY(this.WorldBoundingBox.Top - Main.Player.Bottom.Y, Main.Player.Squish);
+                        }
+                        else if(Main.Player.IsRiding(this))
+                        {
+                            Main.Player.MoveY(moveY, null);
+                        }
+
                         foreach(var entity in allActors)
                         {
                             var actor = entity.GetComponent<Actor>();

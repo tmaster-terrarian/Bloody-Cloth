@@ -246,7 +246,7 @@ public class World : IDisposable, IDrawable
         GC.SuppressFinalize(this);
     }
 
-    public Entity? GetEntityWithId(uint id) => _entityWorld.GetEntityWithId(id);
+    public Ecs.Entity? GetEntityWithId(uint id) => _entityWorld.GetEntityWithId(id);
 
     public List<Actor> GetAllActorComponents()
     {
@@ -260,9 +260,9 @@ public class World : IDisposable, IDrawable
         return actors;
     }
 
-    public List<Entity> GetAllEntitiesWithComponent<T>() where T : Component
+    public List<Ecs.Entity> GetAllEntitiesWithComponent<T>() where T : Component
     {
-        List<Entity> entities = new();
+        List<Ecs.Entity> entities = new();
         foreach(var entity in _entityWorld.Entities)
         {
             if(!entity.IsEnabled) continue;

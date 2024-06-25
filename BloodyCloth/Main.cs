@@ -27,7 +27,6 @@ public class Main : Game
 
     private SpriteFont _font;
     private RenderTarget2D _renderTarget;
-    private Ecs.Entity player;
     private LDtkLevel lDtkLevel;
     private LDtkFile lDtkFile;
     private LDtkWorld lDtkWorld;
@@ -47,6 +46,7 @@ public class Main : Game
     public static Point WorldMousePosition => MousePosition + camera.Position.ToPoint();
 
     public static Texture2D OnePixel { get; private set; }
+    public static Player Player { get; private set; }
 
     public static string SaveDataPath => new PathBuilder{AppendFinalSeparator = true}.Create(PathBuilder.LocalAppdataPath, AppMetadata.Name);
 
@@ -54,6 +54,7 @@ public class Main : Game
     {
         public const string Name = "BloodyCloth";
         public const string Version = "0.1.0.5";
+        public const int Build = 5;
     }
 
     public static SpriteFont RegularFont { get; private set; }
@@ -103,6 +104,7 @@ public class Main : Game
         _world = new World(120, 45);
 
         _world.SetTile("stone", new(10, 13));
+        _world.SetTile("stone", new(10, 12));
         _world.SetTile("stone", new(11, 13));
         _world.SetTile("stone", new(12, 13));
         _world.SetTile("stone", new(13, 13));
@@ -153,7 +155,7 @@ public class Main : Game
         SmallFont = Content.Load<SpriteFont>("Fonts/small");
         SmallFontBold = Content.Load<SpriteFont>("Fonts/smallBold");
 
-        player = PlayerBehavior.CreatePlayerEntity(PlayerIndex.One);
+        Player = new Player();
     }
 
     protected override void Update(GameTime gameTime)
@@ -176,10 +178,12 @@ public class Main : Game
         if(Input.GetPressed(Buttons.Back, PlayerIndex.One) || Input.GetPressed(Keys.Escape))
             Exit();
 
+        Player.Update();
+
         _world.Update();
 
         camera.Zoom = 1;
-        camera.Position += (player.GetComponent<Transform>().position.ToVector2() + new Vector2(-ScreenSize.X / 2f, -ScreenSize.Y / 2f) - camera.Position) / 4f;
+        camera.Position += (Player.position.ToVector2() + new Vector2(-ScreenSize.X / 2f, -ScreenSize.Y / 2f) - camera.Position) / 4f;
         camera.Position = Vector2.Clamp(camera.Position, Vector2.Zero, (World.Bounds.Size.ToVector2() * World.tileSize) - ScreenSize.ToVector2());
         camera.Update();
 
@@ -206,6 +210,8 @@ public class Main : Game
         _spriteBatch.DrawStringSpacesFix(RegularFont, $"{MousePosition.X},{MousePosition.Y}", new(10, _screenSize.Y - 20), Color.White, 4, 0, Vector2.UnitY * 14, 1, SpriteEffects.None, 0);
 
         _world.Draw(gameTime);
+
+        Player.Draw();
 
         _spriteBatch.End();
 
