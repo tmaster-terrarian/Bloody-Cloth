@@ -32,6 +32,8 @@ public class Main : Game
     private LDtkFile lDtkFile;
     private LDtkWorld lDtkWorld;
 
+    internal const string ValidChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789*+=-–—<>_#&@%^~$.,!¡?¿:;`'\"‘’“”«»|/\\()[]{}ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜàáâãäåæçèéêëìíîïñòóôõöùúûüŸÿßẞŒœ‚„°©®™¢€£¥•…‹›";
+
     public static Logger Logger => _logger;
     public static int PixelScale => _pixelScale;
     public static Point ScreenSize => _screenSize;
@@ -46,16 +48,21 @@ public class Main : Game
 
     public static Texture2D OnePixel { get; private set; }
 
-    public static string SaveDataPath => Environment.GetFolderPath(
-        Environment.SpecialFolder.LocalApplicationData,
-        Environment.SpecialFolderOption.DoNotVerify
-    ) + Path.DirectorySeparatorChar + AppMetadata.Name + Path.DirectorySeparatorChar;
+    public static string SaveDataPath => new PathBuilder{AppendFinalSeparator = true}.Create(PathBuilder.LocalAppdataPath, AppMetadata.Name);
 
     public static class AppMetadata
     {
         public const string Name = "BloodyCloth";
         public const string Version = "0.1.0.5";
     }
+
+    public static SpriteFont RegularFont { get; private set; }
+    public static SpriteFont RegularFontBold { get; private set; }
+    public static SpriteFont RegularFontItalic { get; private set; }
+    public static SpriteFont RegularFontBoldItalic { get; private set; }
+
+    public static SpriteFont SmallFont { get; private set; }
+    public static SpriteFont SmallFontBold { get; private set; }
 
     public Main()
     {
@@ -135,25 +142,34 @@ public class Main : Game
         _spriteBatch = new SpriteBatch(GraphicsDevice);
         _world.SpriteBatch = _spriteBatch;
 
-        _font = Content.Load<SpriteFont>("Fonts/default");
+        RegularFont = Content.Load<SpriteFont>("Fonts/default");
+        RegularFontBold = Content.Load<SpriteFont>("Fonts/defaultBold");
+        RegularFontItalic = Content.Load<SpriteFont>("Fonts/defaultItalic");
+        RegularFontBoldItalic = Content.Load<SpriteFont>("Fonts/defaultItalic");
+
+        RegularFontItalic.Spacing = -1;
+        RegularFontBoldItalic.Spacing = 1;
+
+        SmallFont = Content.Load<SpriteFont>("Fonts/small");
+        SmallFontBold = Content.Load<SpriteFont>("Fonts/smallBold");
 
         player = PlayerBehavior.CreatePlayerEntity(PlayerIndex.One);
     }
 
     protected override void Update(GameTime gameTime)
     {
-        Input.RefreshKeyboardState();
-        Input.RefreshGamePadState(PlayerIndex.One);
-        Input.RefreshMouseState();
-
         if(!IsActive && !_paused)
         {
             // pause game on unfocus
         }
 
+        Input.RefreshKeyboardState();
+        Input.RefreshGamePadState(PlayerIndex.One);
+        Input.RefreshMouseState();
+
         if(Input.GetPressed(Keys.F1))
         {
-            _logger.LogInfo(SaveDataPath);
+            _logger.LogInfo(SaveDataPath + Path.DirectorySeparatorChar);
             _logger.LogInfo(AppMetadata.Version);
         }
 
@@ -174,17 +190,25 @@ public class Main : Game
     {
         GraphicsDevice.SetRenderTarget(_renderTarget);
         GraphicsDevice.Clear(Color.CornflowerBlue);
+
         _spriteBatch.Begin(samplerState: SamplerState.PointWrap, transformMatrix: camera.Transform);
 
-        _spriteBatch.DrawStringBold(_font, "The quick brown fox jumps over the lazy dog.", new(10, 10), Color.White, 2, 0, Vector2.Zero, 0.5f, SpriteEffects.None, 0);
-        _spriteBatch.DrawString(_font, "The quick brown fox jumps over the lazy dog.", new(10, 20), Color.White, 0, Vector2.Zero, 0.5f, SpriteEffects.None, 0);
+        _spriteBatch.DrawStringSpacesFix(RegularFontItalic, "The quick brown fox jumps over the lazy dog.", new(11, 54), Color.White, 4, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+        _spriteBatch.DrawStringSpacesFix(RegularFontBold, "The quick brown fox jumps over the lazy dog.", new(10, 10), Color.White, 3, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+        _spriteBatch.DrawStringSpacesFix(SmallFontBold, "The quick brown fox jumps over the lazy dog.", new(10, 22), Color.White, 2, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+        _spriteBatch.DrawStringSpacesFix(RegularFont, "The quick brown fox jumps over the lazy dog.", new(10, 32), Color.White, 4, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+        _spriteBatch.DrawStringSpacesFix(SmallFont, "The quick brown fox jumps over the lazy dog.", new(10, 44), Color.White, 3, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
 
-        _spriteBatch.DrawStringBold(_font, $"{_screenSize.X}x{_screenSize.Y}*{_pixelScale}", new(10, _screenSize.Y - 10), Color.White, 2, 0, Vector2.UnitY * 14, 0.5f, SpriteEffects.None, 0);
-        _spriteBatch.DrawString(_font, $"{MousePosition.X},{MousePosition.Y}", new(10, _screenSize.Y - 20), Color.White, 0, Vector2.UnitY * 14, 0.5f, SpriteEffects.None, 0);
+        _spriteBatch.DrawStringSpacesFix(RegularFontBoldItalic, "The quick brown fox jumps over the lazy dog.", new(11, 66), Color.White, 4, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+        _spriteBatch.DrawStringSpacesFix(RegularFontBoldItalic, "The quick brown fox jumps over the lazy dog.", new(12, 66), Color.White, 4, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+
+        _spriteBatch.DrawStringSpacesFix(RegularFontBold, $"{_screenSize.X}x{_screenSize.Y}*{_pixelScale}", new(10, _screenSize.Y - 10), Color.White, 4, 0, Vector2.UnitY * 14, 1, SpriteEffects.None, 0);
+        _spriteBatch.DrawStringSpacesFix(RegularFont, $"{MousePosition.X},{MousePosition.Y}", new(10, _screenSize.Y - 20), Color.White, 4, 0, Vector2.UnitY * 14, 1, SpriteEffects.None, 0);
 
         _world.Draw(gameTime);
 
         _spriteBatch.End();
+
         GraphicsDevice.SetRenderTarget(null);
         GraphicsDevice.Clear(Color.Black);
 

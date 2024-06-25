@@ -26,7 +26,7 @@
 			"processor": "FontDescriptionProcessor",
 			"processorParam": {
 				"PremultiplyAlpha": "True",
-				"TextureFormat": "Compressed"
+				"TextureFormat": "Color"
 			}
 		},
 		// "sfx": {

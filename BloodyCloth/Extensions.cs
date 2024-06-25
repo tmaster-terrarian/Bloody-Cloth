@@ -6,21 +6,42 @@ namespace BloodyCloth;
 
 public static class Extensions
 {
-    public static void DrawStringBold(this SpriteBatch spriteBatch, SpriteFont font, string text, Vector2 position, Color color, int thickness, float rotation, Vector2 origin, Vector2 scale, SpriteEffects effects = SpriteEffects.None, float layerDepth = 0, bool rtl = false)
+    // public static void DrawStringBold(this SpriteBatch spriteBatch, SpriteFont font, string text, Vector2 position, Color color, int thickness, float rotation, Vector2 origin, Vector2 scale, SpriteEffects effects = SpriteEffects.None, float layerDepth = 0, bool rtl = false)
+    // {
+    //     int _th = MathHelper.Max(thickness, 0);
+    //     spriteBatch.DrawString(font, text, position + new Vector2(MathF.Cos(rotation), MathF.Sin(rotation)) * scale * _th, color, rotation, origin, scale, effects, layerDepth, rtl);
+    //     spriteBatch.DrawString(font, text, position, color, rotation, origin, scale, effects, layerDepth, rtl);
+    // }
+
+    // public static void DrawStringBold(this SpriteBatch spriteBatch, SpriteFont font, string text, Vector2 position, Color color, int thickness, float rotation, Vector2 origin, float scale, SpriteEffects effects = SpriteEffects.None, float layerDepth = 0, bool rtl = false)
+    // {
+    //     spriteBatch.DrawStringBold(font, text, position, color, thickness, rotation, origin, new Vector2(scale), effects, layerDepth, rtl);
+    // }
+
+    // public static void DrawStringBold(this SpriteBatch spriteBatch, SpriteFont font, string text, Vector2 position, Color color, int thickness = 2)
+    // {
+    //     spriteBatch.DrawStringBold(font, text, position, color, thickness, 0, Vector2.Zero, Vector2.One, SpriteEffects.None, 0);
+    // }
+
+    public static void DrawStringSpacesFix(this SpriteBatch spriteBatch, SpriteFont font, string text, Vector2 position, Color color, int spaceSize, float rotation, Vector2 origin, Vector2 scale, SpriteEffects effects = SpriteEffects.None, float layerDepth = 0, bool rtl = false)
     {
-        int _th = MathHelper.Max(thickness, 0);
-        spriteBatch.DrawString(font, text, position + new Vector2(MathF.Cos(rotation), MathF.Sin(rotation)) * scale * _th, color, rotation, origin, scale, effects, layerDepth, rtl);
-        spriteBatch.DrawString(font, text, position, color, rotation, origin, scale, effects, layerDepth, rtl);
+        var split = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        float x = 0;
+        foreach(var word in split)
+        {
+            spriteBatch.DrawString(font, word, position + (Vector2.UnitX * x), color, rotation, origin, scale, effects, layerDepth, rtl);
+            x += (font.MeasureString(word).X + spaceSize) * scale.X;
+        }
     }
 
-    public static void DrawStringBold(this SpriteBatch spriteBatch, SpriteFont font, string text, Vector2 position, Color color, int thickness, float rotation, Vector2 origin, float scale, SpriteEffects effects = SpriteEffects.None, float layerDepth = 0, bool rtl = false)
+    public static void DrawStringSpacesFix(this SpriteBatch spriteBatch, SpriteFont font, string text, Vector2 position, Color color, int spaceSize, float rotation, Vector2 origin, float scale, SpriteEffects effects = SpriteEffects.None, float layerDepth = 0, bool rtl = false)
     {
-        spriteBatch.DrawStringBold(font, text, position, color, thickness, rotation, origin, new Vector2(scale), effects, layerDepth, rtl);
+        spriteBatch.DrawStringSpacesFix(font, text, position, color, spaceSize, rotation, origin, new Vector2(scale), effects, layerDepth, rtl);
     }
 
-    public static void DrawStringBold(this SpriteBatch spriteBatch, SpriteFont font, string text, Vector2 position, Color color, int thickness = 2)
+    public static void DrawStringSpacesFix(this SpriteBatch spriteBatch, SpriteFont font, string text, Vector2 position, Color color, int spaceSize)
     {
-        spriteBatch.DrawStringBold(font, text, position, color, 0, thickness, Vector2.Zero, Vector2.One, SpriteEffects.None, 0);
+        spriteBatch.DrawStringSpacesFix(font, text, position, color, spaceSize, 0, Vector2.Zero, Vector2.One, SpriteEffects.None, 0);
     }
 
     public static int Round(float value)

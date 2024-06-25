@@ -28,7 +28,12 @@ public class Logger
 
     internal static string VerifyString(string str)
     {
-        // TODO: make a method that converts unsafe strings into safe ones
-        return str;
+        var newStr = "";
+        foreach(char ch in str)
+        {
+            if(Main.ValidChars.Contains(ch)) str += ch;
+            else newStr += ' ';
+        }
+        return newStr;
     }
 }
