@@ -17,6 +17,8 @@ public struct Triangle : IEquatable<Triangle>
     [DataMember]
     public Point P3 { get; set; }
 
+    public static Triangle Empty => new();
+
     public Point this[int index]
     {
         readonly get

@@ -76,13 +76,35 @@ public class Player : Entity
 
     bool CheckColliding(Rectangle rectangle, bool ignoreJumpThroughs = false)
     {
-        return Main.World.TileMeeting(rectangle)
-            || Main.World.SolidMeeting(rectangle)
-            || (
-                !ignoreJumpThroughs && CollidesWithJumpthroughs
-                && Main.World.JumpThroughMeeting(rectangle)
-                && !Main.World.JumpThroughMeeting(rectangle.Shift(0, -1))
-            );
+        if(Main.World.TileMeeting(rectangle) || Main.World.SolidMeeting(rectangle)) return true;
+
+        if(!ignoreJumpThroughs && CollidesWithJumpthroughs)
+        {
+            return CheckCollidingJumpthrough(rectangle);
+        }
+
+        return false;
+    }
+
+    bool CheckCollidingJumpthrough(Rectangle rectangle)
+    {
+        // I bet you 100% that this is really laggy in large scale usage lmao
+
+        Rectangle newRect = new(rectangle.Left, rectangle.Bottom - 1, rectangle.Width, 1);
+
+        Triangle tri = Main.World.JumpThroughSlopePlace(newRect) ?? Triangle.Empty;
+        Triangle tri2 = Main.World.JumpThroughSlopePlace(newRect.Shift(0, -1)) ?? Triangle.Empty;
+
+        Rectangle rect = Main.World.JumpThroughPlace(newRect) ?? Rectangle.Empty;
+        Rectangle rect2 = Main.World.JumpThroughPlace(newRect.Shift(0, -1)) ?? Rectangle.Empty;
+
+        // if tri and not tri2 and not rect2?
+
+        // IDKKKK
+
+        if(tri != Triangle.Empty || rect != Rectangle.Empty) return tri != tri2 || rect != rect2;
+
+        return false;
     }
 
     public void Update()
@@ -90,7 +112,7 @@ public class Player : Entity
         int inputDir = Input.GetDown(InputMapping.Right).ToInt32() - Input.GetDown(InputMapping.Left).ToInt32();
 
         bool wasOnGround = OnGround;
-        bool onJumpthrough = Main.World.JumpThroughMeeting(Hitbox.Shift(new(0, 1))) && !Main.World.JumpThroughMeeting(Hitbox);
+        bool onJumpthrough = CheckCollidingJumpthrough(Hitbox.Shift(new(0, 1)));
         OnGround = CheckColliding(Hitbox.Shift(new(0, 1)));
 
         if(!wasOnGround && OnGround)
