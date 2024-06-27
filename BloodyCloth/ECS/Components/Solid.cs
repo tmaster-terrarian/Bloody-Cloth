@@ -35,7 +35,7 @@ namespace BloodyCloth.Ecs.Components
 
         public Solid()
         {
-            Systems.SolidSystem.Register(this);
+            SolidSystem.Register(this);
         }
 
         public override void OnCreate()
@@ -204,13 +204,5 @@ namespace BloodyCloth.Ecs.Components
             }
             return actors;
         }
-    }
-}
-
-namespace BloodyCloth.Ecs.Systems
-{
-    public class SolidSystem : ComponentSystem<Components.Solid>
-    {
-        
     }
 }

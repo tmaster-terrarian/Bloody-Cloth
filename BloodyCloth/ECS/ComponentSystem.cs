@@ -21,7 +21,7 @@ public abstract class ComponentSystem<T> where T : Component
         _activeComponents.Remove(component);
     }
 
-    public static void Update()
+    public static void UpdateComponents()
     {
         foreach (T component in _activeComponents)
         {
@@ -35,7 +35,7 @@ public abstract class ComponentSystem<T> where T : Component
         }
     }
 
-    public static void Draw()
+    public static void DrawComponents()
     {
         foreach (T component in _activeComponents)
         {
@@ -49,3 +49,30 @@ public abstract class ComponentSystem<T> where T : Component
         }
     }
 }
+
+public static class ComponentSystems
+{
+    public static void Update()
+    {
+        TransformSystem.UpdateComponents();
+        OscillatePositionSystem.UpdateComponents();
+        SolidSystem.UpdateComponents();
+        ActorSystem.UpdateComponents();
+        SpriteSystem.UpdateComponents();
+    }
+
+    public static void Draw()
+    {
+        TransformSystem.DrawComponents();
+        OscillatePositionSystem.DrawComponents();
+        SolidSystem.DrawComponents();
+        ActorSystem.DrawComponents();
+        SpriteSystem.DrawComponents();
+    }
+}
+
+public class OscillatePositionSystem : ComponentSystem<Components.OscillatePosition> {}
+public class SolidSystem : ComponentSystem<Components.Solid> {}
+public class ActorSystem : ComponentSystem<Components.Actor> {}
+public class SpriteSystem : ComponentSystem<Components.Sprite> {}
+public class TransformSystem : ComponentSystem<Components.Transform> {}

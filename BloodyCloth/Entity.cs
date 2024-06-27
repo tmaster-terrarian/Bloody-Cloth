@@ -24,7 +24,9 @@ public abstract class Entity
 	public int Width { get; protected set; } = 8;
 	public int Height { get; protected set; } = 8;
 
-	public virtual bool Active { get; private set; }
+	public virtual bool Active { get; private set; } = true;
+
+    public virtual bool CollidesWithJumpthroughs { get; protected set; } = true;
 
 	public float Rotation { get; protected set; }
 

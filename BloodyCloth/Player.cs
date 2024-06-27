@@ -40,6 +40,7 @@ public class Player : Entity
     private float moveSpeed = 2.5f;
     private float jumpSpeed = -4.5f;
     private float gravity = 0.2f;
+    public Point HitboxOffset => new(11, 6);
 
     public override bool Active => true;
 
@@ -73,9 +74,15 @@ public class Player : Entity
         frameCounts.Add(frameCount);
     }
 
-    static bool CheckColliding(Rectangle rectangle)
+    bool CheckColliding(Rectangle rectangle, bool ignoreJumpThroughs = false)
     {
-        return Main.World.TileMeeting(rectangle) || Main.World.SolidMeeting(rectangle);
+        return Main.World.TileMeeting(rectangle)
+            || Main.World.SolidMeeting(rectangle)
+            || (
+                !ignoreJumpThroughs && CollidesWithJumpthroughs
+                && Main.World.JumpThroughMeeting(rectangle)
+                && !Main.World.JumpThroughMeeting(rectangle.Shift(0, -1))
+            );
     }
 
     public void Update()
@@ -84,7 +91,7 @@ public class Player : Entity
 
         bool wasOnGround = OnGround;
         bool onJumpthrough = Main.World.JumpThroughMeeting(Hitbox.Shift(new(0, 1))) && !Main.World.JumpThroughMeeting(Hitbox);
-        OnGround = CheckColliding(Hitbox.Shift(new(0, 1))) || onJumpthrough;
+        OnGround = CheckColliding(Hitbox.Shift(new(0, 1)));
 
         if(!wasOnGround && OnGround)
         {
@@ -292,7 +299,7 @@ public class Player : Entity
             while(move != 0)
             {
                 bool col1 = CheckColliding(Hitbox.Shift(new(sign, 0)));
-                if((col1 && !CheckColliding(Hitbox.Shift(new(sign, -1)))) || (Main.World.JumpThroughMeeting(Hitbox.Shift(new(sign, 0))) && !Main.World.JumpThroughMeeting(Hitbox.Shift(new(sign, -1)))))
+                if(col1 && !CheckColliding(Hitbox.Shift(new(sign, -1))))
                 {
                     position.X += sign;
                     position.Y -= 1;
@@ -302,7 +309,7 @@ public class Player : Entity
                 {
                     if(OnGround)
                     {
-                        if(!CheckColliding(Hitbox.Shift(new(sign, 1))) && !Main.World.JumpThroughMeeting(Hitbox.Shift(new(sign, 1))) && (CheckColliding(Hitbox.Shift(new(sign, 2))) || Main.World.JumpThroughMeeting(Hitbox.Shift(new(sign, 2)))))
+                        if(!CheckColliding(Hitbox.Shift(new(sign, 1))) && CheckColliding(Hitbox.Shift(new(sign, 2))))
                             position.Y += 1;
                     }
                     position.X += sign;
@@ -327,7 +334,7 @@ public class Player : Entity
             int sign = Math.Sign(move);
             while(move != 0)
             {
-                if(!CheckColliding(Hitbox.Shift(new(0, sign))) && !(sign == 1 && Main.World.JumpThroughMeeting(Hitbox.Shift(new(0, sign))) && !Main.World.JumpThroughMeeting(Hitbox)))
+                if(!CheckColliding(Hitbox.Shift(new(0, sign)), sign == -1))
                 {
                     position.Y += sign;
                     move -= sign;
@@ -342,7 +349,7 @@ public class Player : Entity
 
     public bool IsRiding(Ecs.Components.Solid solid)
     {
-        return solid.Collidable && Hitbox.Shift(new Point(0, 2)).Intersects(solid.WorldBoundingBox);
+        return solid.Collidable && Hitbox.Shift(new Point(0, 1)).Intersects(solid.WorldBoundingBox);
     }
 
     public void Squish()

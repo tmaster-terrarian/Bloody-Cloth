@@ -11,9 +11,7 @@ namespace BloodyCloth.Ecs.Components
 
         public Transform()
         {
-            Systems.TransformSystem.Register(this);
+            TransformSystem.Register(this);
         }
     }
 }
-
-namespace BloodyCloth.Ecs.Systems { public class TransformSystem : ComponentSystem<Components.Transform> {} }

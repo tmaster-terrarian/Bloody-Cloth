@@ -22,7 +22,7 @@ namespace BloodyCloth.Ecs.Components
 
         public Sprite()
         {
-            Systems.SpriteSystem.Register(this);
+            SpriteSystem.Register(this);
         }
 
         public override void Draw()
@@ -41,13 +41,5 @@ namespace BloodyCloth.Ecs.Components
             texture.Dispose();
             texture = null;
         }
-    }
-}
-
-namespace BloodyCloth.Ecs.Systems
-{
-    public class SpriteSystem : ComponentSystem<Components.Sprite>
-    {
-        
     }
 }

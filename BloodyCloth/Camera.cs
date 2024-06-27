@@ -3,13 +3,11 @@
 
 using System;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 
 namespace BloodyCloth;
 
 public class Camera
 {
-    readonly GraphicsDevice graphicsDevice;
     readonly Random random;
     float currentShake;
     float shakeMagnitude;
@@ -21,9 +19,8 @@ public class Camera
 
     public Matrix Transform { get; private set; } = new();
 
-    public Camera(GraphicsDevice graphicsDevice)
+    public Camera()
     {
-        this.graphicsDevice = graphicsDevice;
         this.random = new();
     }
 

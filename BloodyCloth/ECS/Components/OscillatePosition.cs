@@ -12,7 +12,7 @@ namespace BloodyCloth.Ecs.Components
 
         public OscillatePosition()
         {
-            Systems.OscillatePositionSystem.Register(this);
+            OscillatePositionSystem.Register(this);
         }
 
         public override void OnCreate()
@@ -32,13 +32,5 @@ namespace BloodyCloth.Ecs.Components
 
             _time++;
         }
-    }
-}
-
-namespace BloodyCloth.Ecs.Systems
-{
-    public class OscillatePositionSystem : ComponentSystem<Components.OscillatePosition>
-    {
-        
     }
 }

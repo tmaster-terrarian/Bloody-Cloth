@@ -14,6 +14,7 @@ using LDtk.Renderer;
 using System.Collections.Generic;
 using System.Text.Json.Nodes;
 using System.Text.Json;
+using BloodyCloth.Graphics;
 
 namespace BloodyCloth;
 
@@ -23,27 +24,22 @@ public class Main : Game
 
     private static Main _instance = null;
     private static GraphicsDeviceManager _graphics;
-    private static SpriteBatch _spriteBatch;
     private static Logger _logger = new();
-    private static int _pixelScale = 3;
-    private static Point _screenSize = new Point(640, 360);
     private static World _world;
     private static Camera camera;
 
-    private RenderTarget2D _renderTarget;
     private LDtkFile lDtkFile;
     private LDtkWorld lDtkWorld;
     private ExampleRenderer lDtkRenderer;
 
     public static Logger Logger => _logger;
-    public static int PixelScale => _pixelScale;
-    public static Point ScreenSize => _screenSize;
+    public static Point ScreenSize => Renderer.ScreenSize;
     public static World World => _world;
     public static bool IsPaused => !_instance.IsActive;
     public static Camera Camera => camera;
 
-    public static Point MousePosition => new(Mouse.GetState().X / _pixelScale, Mouse.GetState().Y / _pixelScale);
-    public static Point MousePositionClamped => new(MathHelper.Clamp(Mouse.GetState().X / _pixelScale, 0, _screenSize.X - 1), MathHelper.Clamp(Mouse.GetState().Y / _pixelScale, 0, _screenSize.Y - 1));
+    public static Point MousePosition => new(Mouse.GetState().X / Renderer.PixelScale, Mouse.GetState().Y / Renderer.PixelScale);
+    public static Point MousePositionClamped => new(MathHelper.Clamp(Mouse.GetState().X / Renderer.PixelScale, 0, ScreenSize.X - 1), MathHelper.Clamp(Mouse.GetState().Y / Renderer.PixelScale, 0, ScreenSize.Y - 1));
 
     public static Point WorldMousePosition => MousePosition + camera.Position.ToPoint();
 
@@ -62,24 +58,18 @@ public class Main : Game
         public const int Build = 5;
     }
 
-    public static SpriteFont RegularFont { get; private set; }
-    public static SpriteFont RegularFontBold { get; private set; }
-    public static SpriteFont RegularFontItalic { get; private set; }
-    public static SpriteFont RegularFontBoldItalic { get; private set; }
-
-    public static SpriteFont SmallFont { get; private set; }
-    public static SpriteFont SmallFontBold { get; private set; }
-
     public Main()
     {
+        if(_instance is not null) throw new Exception("You can't start the game more than once 4head");
+
         _instance = this;
 
         _graphics = new GraphicsDeviceManager(this)
         {
             PreferMultiSampling = false,
             SynchronizeWithVerticalRetrace = true,
-            PreferredBackBufferWidth = _screenSize.X * _pixelScale,
-            PreferredBackBufferHeight = _screenSize.Y * _pixelScale,
+            PreferredBackBufferWidth = ScreenSize.X * Renderer.PixelScale,
+            PreferredBackBufferHeight = ScreenSize.Y * Renderer.PixelScale,
         };
 
         Content.RootDirectory = "Content";
@@ -90,19 +80,9 @@ public class Main : Game
     // for future me: it seems that in general, most things arent ready yet in the constructor, so just use Initialize <3
     protected override void Initialize()
     {
-        _renderTarget = new RenderTarget2D(GraphicsDevice, _screenSize.X, _screenSize.Y);
+        Renderer.Initialize(_graphics, GraphicsDevice, Window);
 
-        Window.Position = new((GraphicsDevice.DisplayMode.Width - _graphics.PreferredBackBufferWidth) / 2, (GraphicsDevice.DisplayMode.Height - _graphics.PreferredBackBufferHeight) / 2);
-
-        if(GraphicsDevice.DisplayMode.Height == _graphics.PreferredBackBufferHeight)
-        {
-            Window.Position = Point.Zero;
-            Window.IsBorderless = true;
-        }
-
-        _graphics.ApplyChanges();
-
-        camera = new Camera(GraphicsDevice);
+        camera = new Camera();
 
         OnePixel = new Texture2D(GraphicsDevice, 1, 1);
         OnePixel.SetData(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF });
@@ -129,7 +109,7 @@ public class Main : Game
 
         base.Initialize();
 
-        lDtkRenderer = new(_spriteBatch);
+        lDtkRenderer = new(Renderer.SpriteBatch);
 
         lDtkFile = LDtkFile.FromFile(ProgramPath + "/Content/Levels/Level0.ldtk");
 
@@ -173,19 +153,9 @@ public class Main : Game
 
     protected override void LoadContent()
     {
-        _spriteBatch = new SpriteBatch(GraphicsDevice);
-        _world.SpriteBatch = _spriteBatch;
+        Renderer.LoadContent(Content);
 
-        RegularFont = Content.Load<SpriteFont>("Fonts/default");
-        RegularFontBold = Content.Load<SpriteFont>("Fonts/defaultBold");
-        RegularFontItalic = Content.Load<SpriteFont>("Fonts/defaultItalic");
-        RegularFontBoldItalic = Content.Load<SpriteFont>("Fonts/defaultItalic");
-
-        RegularFontItalic.Spacing = -1;
-        RegularFontBoldItalic.Spacing = 1;
-
-        SmallFont = Content.Load<SpriteFont>("Fonts/small");
-        SmallFontBold = Content.Load<SpriteFont>("Fonts/smallBold");
+        _world.SpriteBatch = Renderer.SpriteBatch;
 
         Player = new Player();
     }
@@ -218,10 +188,7 @@ public class Main : Game
 
     protected override void Draw(GameTime gameTime)
     {
-        GraphicsDevice.SetRenderTarget(_renderTarget);
-        GraphicsDevice.Clear(Color.CornflowerBlue);
-
-        _spriteBatch.Begin(samplerState: SamplerState.PointWrap, transformMatrix: camera.Transform);
+        Renderer.BeginDraw(SamplerState.PointWrap, camera.Transform);
 
         foreach(var level in lDtkWorld.Levels)
         {
@@ -230,28 +197,21 @@ public class Main : Game
 
         _world.Draw();
 
-        // _spriteBatch.DrawStringSpacesFix(RegularFontItalic, "The quick brown fox jumps over the lazy dog.", new(11, 54), Color.White, 4, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
-        // _spriteBatch.DrawStringSpacesFix(RegularFontBold, "The quick brown fox jumps over the lazy dog.", new(10, 10), Color.White, 3, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
-        // _spriteBatch.DrawStringSpacesFix(SmallFontBold, "The quick brown fox jumps over the lazy dog.", new(10, 22), Color.White, 2, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
-        // _spriteBatch.DrawStringSpacesFix(RegularFont, "The quick brown fox jumps over the lazy dog.", new(10, 32), Color.White, 4, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
-        // _spriteBatch.DrawStringSpacesFix(SmallFont, "The quick brown fox jumps over the lazy dog.", new(10, 44), Color.White, 3, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+        // Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFontItalic, "The quick brown fox jumps over the lazy dog.", new(11, 54), Color.White, 4, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+        // Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFontBold, "The quick brown fox jumps over the lazy dog.", new(10, 10), Color.White, 3, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+        // Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.SmallFontBold, "The quick brown fox jumps over the lazy dog.", new(10, 22), Color.White, 2, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+        // Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFont, "The quick brown fox jumps over the lazy dog.", new(10, 32), Color.White, 4, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+        // Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.SmallFont, "The quick brown fox jumps over the lazy dog.", new(10, 44), Color.White, 3, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
 
-        // _spriteBatch.DrawStringSpacesFix(RegularFontBoldItalic, "The quick brown fox jumps over the lazy dog.", new(11, 66), Color.White, 4, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
-        // _spriteBatch.DrawStringSpacesFix(RegularFontBoldItalic, "The quick brown fox jumps over the lazy dog.", new(12, 66), Color.White, 4, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+        // Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFontBoldItalic, "The quick brown fox jumps over the lazy dog.", new(11, 66), Color.White, 4, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+        // Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFontBoldItalic, "The quick brown fox jumps over the lazy dog.", new(12, 66), Color.White, 4, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
 
-        Player.Draw(_spriteBatch);
+        Player.Draw(Renderer.SpriteBatch);
 
-        _spriteBatch.DrawStringSpacesFix(RegularFontBold, $"{_screenSize.X}x{_screenSize.Y}*{_pixelScale}", new(10, _screenSize.Y - 10), Color.White, 4, 0, Vector2.UnitY * 14, 1, SpriteEffects.None, 0);
-        _spriteBatch.DrawStringSpacesFix(RegularFont, $"{MousePosition.X}, {MousePosition.Y}", new(10, _screenSize.Y - 20), Color.White, 4, 0, Vector2.UnitY * 14, 1, SpriteEffects.None, 0);
+        Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFontBold, $"{ScreenSize.X}x{ScreenSize.Y}*{Renderer.PixelScale}", new(10, ScreenSize.Y - 10), Color.White, 4, 0, Vector2.UnitY * 14, 1, SpriteEffects.None, 0);
+        Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFont, $"{MousePosition.X}, {MousePosition.Y}", new(10, ScreenSize.Y - 20), Color.White, 4, 0, Vector2.UnitY * 14, 1, SpriteEffects.None, 0);
 
-        _spriteBatch.End();
-
-        GraphicsDevice.SetRenderTarget(null);
-        GraphicsDevice.Clear(Color.Black);
-
-        _spriteBatch.Begin(samplerState: SamplerState.PointWrap);
-        _spriteBatch.Draw(_renderTarget, Vector2.Zero, null, Color.White, 0, Vector2.Zero, _pixelScale, SpriteEffects.None, 0);
-        _spriteBatch.End();
+        Renderer.EndDraw();
 
         base.Draw(gameTime);
     }

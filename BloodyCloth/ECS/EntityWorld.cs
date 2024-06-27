@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using BloodyCloth.Ecs.Systems;
 using Microsoft.Xna.Framework;
 
 namespace BloodyCloth.Ecs;

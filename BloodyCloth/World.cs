@@ -5,9 +5,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
 using BloodyCloth.Ecs;
-using BloodyCloth.Ecs.Systems;
 using BloodyCloth.Ecs.Components;
-using BloodyCloth.Utils;
 
 namespace BloodyCloth;
 
@@ -109,19 +107,9 @@ public class World : IDisposable
         }
     }
 
-    public void LoadContent()
-    {
-        
-    }
-
     public void Update()
     {
-        PlayerBehaviorSystem.Update();
-        TransformSystem.Update();
-        OscillatePositionSystem.Update();
-        SolidSystem.Update();
-        ActorSystem.Update();
-        SpriteSystem.Update();
+        ComponentSystems.Update();
     }
 
     public void Draw()
@@ -205,12 +193,7 @@ public class World : IDisposable
             }
         }
 
-        PlayerBehaviorSystem.Draw();
-        TransformSystem.Draw();
-        OscillatePositionSystem.Draw();
-        SolidSystem.Draw();
-        ActorSystem.Draw();
-        SpriteSystem.Draw();
+        ComponentSystems.Draw();
     }
 
     public void DrawSprite(Texture2D texture, Vector2 position, Rectangle? sourceRectangle, Color color, float rotation, Vector2 origin, Vector2 scale, SpriteEffects effects = SpriteEffects.None, float layerDepth = 0)

@@ -37,7 +37,7 @@ namespace BloodyCloth.Ecs.Components
 
         public Actor()
         {
-            Systems.ActorSystem.Register(this);
+            ActorSystem.Register(this);
         }
 
         public override void OnCreate()
@@ -132,13 +132,5 @@ namespace BloodyCloth.Ecs.Components
         {
             Main.Logger.LogInfo("Actor " + Entity.ID + " was squished");
         }
-    }
-}
-
-namespace BloodyCloth.Ecs.Systems
-{
-    public class ActorSystem : ComponentSystem<Components.Actor>
-    {
-        
     }
 }

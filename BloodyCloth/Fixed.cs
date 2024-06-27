@@ -4,83 +4,76 @@ namespace BloodyCloth;
 
 public readonly struct Fixed : IEquatable<Fixed>
 {
-    private readonly int wholePart = 0;
-    private readonly ushort decimalPart = 0;
+    private readonly ulong packedValue = 0;
 
-    private readonly double DecimalPartToDouble => (double)decimalPart / 65536 * Math.Sign(wholePart);
-    private readonly float DecimalPartToFloat => (float)decimalPart / 65536 * Math.Sign(wholePart);
+    private readonly uint WholePart => (uint)packedValue >> 16;
+    private readonly ushort DecimalPart => (ushort)(packedValue & ushort.MaxValue);
 
-    private Fixed(int wholePart, ushort decimalPart)
+    private readonly bool sign = false;
+
+    private readonly int SignValue => sign ? -1 : 1;
+
+    private readonly double DecimalPartToDouble => (double)DecimalPart / (ushort.MaxValue + 1);
+
+    private Fixed(int wholePart, ushort decimalPart, bool sign = false)
     {
-        this.wholePart = wholePart;
-        this.decimalPart = decimalPart;
+        this.packedValue = decimalPart | ((uint)wholePart << 16);
+        this.sign = sign;
+    }
+
+    private Fixed(uint wholePart, ushort decimalPart, bool sign = false)
+    {
+        this.packedValue = decimalPart | (wholePart << 16);
+        this.sign = sign;
     }
 
     public static Fixed From(float value)
     {
         int _int = (int)value;
-        return new(_int, (ushort)(Math.Abs(value - _int) * 65536));
+        return new(_int, (ushort)(Math.Abs(value - _int) * (ushort.MaxValue + 1)), Math.Sign(value) == -1);
     }
 
     public static Fixed From(double value)
     {
         int _int = (int)value;
-        return new(_int, (ushort)(Math.Abs(value - _int) * 65536));
+        return new(_int, (ushort)(Math.Abs(value - _int) * (ushort.MaxValue + 1)), Math.Sign(value) == -1);
     }
 
-    public static explicit operator float(Fixed a)
+    public static explicit operator float(Fixed value)
     {
-        return a.wholePart + a.DecimalPartToFloat;
+        return (value.WholePart + (float)value.DecimalPartToDouble) * value.SignValue;
     }
 
-    public static explicit operator double(Fixed a)
+    public static explicit operator double(Fixed value)
     {
-        return a.wholePart + a.DecimalPartToDouble;
+        return (value.WholePart + value.DecimalPartToDouble) * value.SignValue;
     }
 
-    public static explicit operator int(Fixed a)
+    public static explicit operator int(Fixed value)
     {
-        return a.wholePart;
+        return (int)value.WholePart * value.SignValue;
     }
 
-    public static implicit operator Fixed(int a)
+    public static implicit operator Fixed(int value)
     {
-        return new(a, 0);
+        return new(Math.Abs(value), 0, Math.Sign(value) == -1);
     }
 
     public static Fixed operator +(Fixed a, int b)
     {
-        return new(a.wholePart + b, a.decimalPart);
+        int sign = Math.Sign(a.WholePart + b);
+        return new(Math.Abs((int)a.WholePart + b), a.DecimalPart, sign == -1);
     }
 
     public static Fixed operator -(Fixed a, int b)
     {
-        return a + -b;
-    }
-
-    public static Fixed operator +(Fixed a, float b)
-    {
-        return new(a.wholePart + (int)b, (ushort)(Math.Abs(b - (int)b) * 65536));
-    }
-
-    public static Fixed operator -(Fixed a, float b)
-    {
-        return a + -b;
-    }
-
-    public static Fixed operator +(Fixed a, double b)
-    {
-        return new(a.wholePart + (int)b, (ushort)(Math.Abs(b - (int)b) * 65536));
-    }
-
-    public static Fixed operator -(Fixed a, double b)
-    {
-        return a + -b;
+        int sign = Math.Sign(a.WholePart + b);
+        return new(Math.Abs((int)a.WholePart - b), a.DecimalPart, sign == -1);
     }
 
     public static Fixed operator +(Fixed a, Fixed b)
     {
-        return new(a.wholePart + b.wholePart, (ushort)((Math.Sign(a.wholePart) * a.decimalPart + Math.Sign(b.wholePart) * b.decimalPart) % 65536));
+        return new(a.WholePart + b.WholePart, (ushort)((a.DecimalPart + b.DecimalPart) % (ushort.MaxValue + 1)));
     }
 
     public static Fixed operator -(Fixed a, Fixed b)
@@ -90,42 +83,64 @@ public readonly struct Fixed : IEquatable<Fixed>
 
     public static Fixed operator -(Fixed value)
     {
-        return new(-value.wholePart, value.decimalPart);
+        return new(value.WholePart, value.DecimalPart, !value.sign);
+    }
+
+    public static Fixed operator *(Fixed a, int b)
+    {
+        return From((a.WholePart + a.DecimalPartToDouble) * b);
+    }
+
+    public static Fixed operator /(Fixed a, int b)
+    {
+        return From((a.WholePart + a.DecimalPartToDouble) / b);
     }
 
     public static Fixed operator *(Fixed a, Fixed b)
     {
-        return From((a.wholePart + a.DecimalPartToDouble) * (b.wholePart + b.DecimalPartToDouble));
+        return From((a.WholePart + a.DecimalPartToDouble) * (b.WholePart + b.DecimalPartToDouble));
     }
 
     public static Fixed operator /(Fixed a, Fixed b)
     {
-        return From((a.wholePart + a.DecimalPartToDouble) / (b.wholePart + b.DecimalPartToDouble));
+        return From((a.WholePart + a.DecimalPartToDouble) / (b.WholePart + b.DecimalPartToDouble));
     }
 
     public static bool operator >(Fixed a, Fixed b)
     {
-        return (a.wholePart + a.DecimalPartToDouble) > (b.wholePart + b.DecimalPartToDouble);
+        if(a.sign && !b.sign) return true;
+        if(!a.sign && b.sign) return false;
+
+        ulong value1 = a.DecimalPart | (a.WholePart << 16);
+        ulong value2 = b.DecimalPart | (b.WholePart << 16);
+
+        return value1 > value2;
     }
 
     public static bool operator <(Fixed a, Fixed b)
     {
-        return (a.wholePart + a.DecimalPartToDouble) < (b.wholePart + b.DecimalPartToDouble);
+        if(a.sign && !b.sign) return false;
+        if(!a.sign && b.sign) return true;
+
+        ulong value1 = a.DecimalPart | (a.WholePart << 16);
+        ulong value2 = b.DecimalPart | (b.WholePart << 16);
+
+        return value1 < value2;
     }
 
     public static bool operator ==(Fixed a, Fixed b)
     {
-        return a.wholePart == b.wholePart && a.decimalPart == b.decimalPart;
+        return ((a.DecimalPart | ((ulong)a.WholePart << 16)) == (b.DecimalPart | ((ulong)b.WholePart << 16))) && a.sign == b.sign;
     }
 
     public static bool operator !=(Fixed a, Fixed b)
     {
-        return a.wholePart != b.wholePart || a.decimalPart != b.decimalPart;
+        return ((a.DecimalPart | ((ulong)a.WholePart << 16)) != (b.DecimalPart | ((ulong)b.WholePart << 16))) || a.sign != b.sign;
     }
 
     public readonly bool Equals(Fixed other)
     {
-        return wholePart == other.wholePart && decimalPart == other.decimalPart;
+        return WholePart == other.WholePart && DecimalPart == other.DecimalPart && sign == other.sign;
     }
 
     public override readonly bool Equals(object obj)
