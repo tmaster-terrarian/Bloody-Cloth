@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Xna.Framework;
 
 namespace BloodyCloth.Utils;
@@ -97,5 +98,15 @@ public static class MathUtil
         value.X = SnapCeiling(value.X, interval);
         value.Y = SnapCeiling(value.Y, interval);
         return value;
+    }
+
+    public static int AbsMax(int value, int max)
+    {
+        return MathHelper.Max(Math.Abs(value), Math.Abs(max)) * Math.Sign(value);
+    }
+
+    public static int AbsMin(int value, int min)
+    {
+        return MathHelper.Min(Math.Abs(value), Math.Abs(min)) * Math.Sign(value);
     }
 }

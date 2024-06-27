@@ -56,32 +56,32 @@ public static class Input
 
     public static bool GetDown(Keys key)
     {
-        return currentKeyboardState.IsKeyDown(key);
+        return currentKeyboardState.IsKeyDown(key) && !Main.IsPaused;
     }
 
     public static bool GetPressed(Keys key)
     {
-        return currentKeyboardState.IsKeyDown(key) && !previousKeyboardState.IsKeyDown(key);
+        return currentKeyboardState.IsKeyDown(key) && !previousKeyboardState.IsKeyDown(key) && !Main.IsPaused;
     }
 
     public static bool GetReleased(Keys key)
     {
-        return !currentKeyboardState.IsKeyDown(key) && previousKeyboardState.IsKeyDown(key);
+        return !currentKeyboardState.IsKeyDown(key) && previousKeyboardState.IsKeyDown(key) && !Main.IsPaused;
     }
 
     public static bool GetDown(Buttons button, PlayerIndex index)
     {
-        return currentGamepadStates[(int)index].IsButtonDown(button);
+        return currentGamepadStates[(int)index].IsButtonDown(button) && !Main.IsPaused;
     }
 
     public static bool GetPressed(Buttons button, PlayerIndex index)
     {
-        return currentGamepadStates[(int)index].IsButtonDown(button) && !previousGamepadStates[(int)index].IsButtonDown(button);
+        return currentGamepadStates[(int)index].IsButtonDown(button) && !previousGamepadStates[(int)index].IsButtonDown(button) && !Main.IsPaused;
     }
 
     public static bool GetReleased(Buttons button, PlayerIndex index)
     {
-        return !currentGamepadStates[(int)index].IsButtonDown(button) && previousGamepadStates[(int)index].IsButtonDown(button);
+        return !currentGamepadStates[(int)index].IsButtonDown(button) && previousGamepadStates[(int)index].IsButtonDown(button) && !Main.IsPaused;
     }
 
     public static bool GetDown(Buttons button) => GetDown(button, PlayerIndex.One);
@@ -92,17 +92,17 @@ public static class Input
 
     public static bool GetDown(MouseButtons button)
     {
-        return GetMouseButtonState(currentMouseState, button) == ButtonState.Pressed;
+        return GetMouseButtonState(currentMouseState, button) == ButtonState.Pressed && !Main.IsPaused;
     }
 
     public static bool GetPressed(MouseButtons button)
     {
-        return GetMouseButtonState(currentMouseState, button) == ButtonState.Pressed && GetMouseButtonState(previousMouseState, button) == ButtonState.Released;
+        return GetMouseButtonState(currentMouseState, button) == ButtonState.Pressed && GetMouseButtonState(previousMouseState, button) == ButtonState.Released && !Main.IsPaused;
     }
 
     public static bool GetReleased(MouseButtons button)
     {
-        return GetMouseButtonState(currentMouseState, button) == ButtonState.Released && GetMouseButtonState(previousMouseState, button) == ButtonState.Pressed;
+        return GetMouseButtonState(currentMouseState, button) == ButtonState.Released && GetMouseButtonState(previousMouseState, button) == ButtonState.Pressed && !Main.IsPaused;
     }
 
     private static ButtonState GetMouseButtonState(MouseState state, MouseButtons button)
@@ -122,7 +122,7 @@ public static class Input
 
     public static int GetScrollDelta()
     {
-        return System.Math.Sign(currentMouseState.ScrollWheelValue - previousMouseState.ScrollWheelValue);
+        return Main.IsPaused ? 0 : System.Math.Sign(currentMouseState.ScrollWheelValue - previousMouseState.ScrollWheelValue);
     }
 }
 

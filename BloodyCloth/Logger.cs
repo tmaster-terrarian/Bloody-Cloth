@@ -23,7 +23,7 @@ public class Logger
     private void _Log(string type, object message)
     {
         var date = DateTime.Now - _startDate;
-        Console.WriteLine(VerifyString($"[{date.Hours}:{date.Minutes}:{date.Seconds}] [{Name}/{type}] {message}"));
+        Console.WriteLine(VerifyString($"[{date.Hours.ToString("D2")}:{date.Minutes.ToString("D2")}:{date.Seconds.ToString("D2")}] [{Name}/{type}] {message}"));
     }
 
     internal static string VerifyString(string str)
@@ -31,7 +31,7 @@ public class Logger
         var newStr = "";
         foreach(char ch in str)
         {
-            if(Main.ValidChars.Contains(ch)) str += ch;
+            if(Main.ValidChars.Contains(ch)) newStr += ch;
             else newStr += ' ';
         }
         return newStr;

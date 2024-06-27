@@ -43,6 +43,11 @@
 			"path": "Levels/*.ldtk",
 			"recursive": "True",
 			"action": "copy"
+		},
+		"levelTextures": {
+			"path": "Levels/*.png",
+			"recursive": "True",
+			"action": "copy"
 		}
 	}
 }

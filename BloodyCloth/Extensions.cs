@@ -73,4 +73,9 @@ public static class Extensions
     {
         return new(MathHelper.Clamp(value.X, min.X, max.X), MathHelper.Clamp(value.Y, min.Y, max.Y));
     }
+
+    public static Point ToPoint(this LDtk.GridPoint gridPoint, int gridSize = 1)
+    {
+        return new(gridPoint.Cx * gridSize, gridPoint.Cy * gridSize);
+    }
 }

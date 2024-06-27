@@ -11,39 +11,32 @@ using BloodyCloth.Utils;
 
 namespace BloodyCloth;
 
-public class World : IDisposable, IDrawable
+public class World : IDisposable
 {
     private Rectangle[,] _collisions = null;
-
     private EntityWorld _entityWorld = new();
 
-    private Dictionary<string, Texture2D> _textureCache;
+    public SpriteBatch SpriteBatch { get; set; }
 
-    private SpriteBatch _spriteBatch;
+    private readonly int[,] _tiles;
 
-    public SpriteBatch SpriteBatch { get => _spriteBatch; set => _spriteBatch = value; }
+    public const int TileSize = 8;
 
-    protected Tile[,] _tiles;
+    private readonly int width;
+    private readonly int height;
 
-    public const int tileSize = 8;
-
-    public int width;
-    public int height;
-
-    public int DrawOrder => 0;
-
-    public bool Visible => true;
+    public bool Visible { get; set; } = true;
 
     public EntityWorld Entities => _entityWorld;
 
     public Rectangle Bounds {
         get {
-            return new Rectangle(0, 0, width, height);
+            return new Rectangle(0, 0, Width, Height);
         }
     }
     public Point Size {
         get {
-            return new Point(width, height);
+            return new Point(Width, Height);
         }
     }
 
@@ -51,17 +44,17 @@ public class World : IDisposable, IDrawable
         get {
             if(_collisions != null) return _collisions;
 
-            Rectangle[,] rectangles = new Rectangle[width, height];
+            Rectangle[,] rectangles = new Rectangle[Width, Height];
 
-            for(int x = 0; x < width; x++)
+            for(int x = 0; x < Width; x++)
             {
-                for(int y = 0; y < height; y++)
+                for(int y = 0; y < Height; y++)
                 {
                     var tile = _tiles[x, y];
                     Rectangle rect = new Rectangle(-10000, -10000, 1, 1);
 
-                    if(tile.id != "air")
-                        rect = new Rectangle(x * tileSize, y * tileSize, tileSize, tileSize);
+                    if(tile != 0)
+                        rect = new Rectangle(x * TileSize, y * TileSize, TileSize, TileSize);
 
                     rectangles[x, y] = rect;
                 }
@@ -72,57 +65,29 @@ public class World : IDisposable, IDrawable
         }
     }
 
-    public Tile TilePlace(Rectangle rect)
-    {
-        Rectangle[,] cols = Collisions;
-        for(int x = 0; x < width; x++)
-        {
-            for(int y = 0; y < height; y++)
-            {
-                var r = cols[x, y];
+    public List<Rectangle> JumpThroughs { get; } = new();
+    public List<Triangle> JumpThroughSlopes { get; } = new();
+    public List<Triangle> Slopes { get; } = new();
 
-                if(rect.Intersects(r)) return _tiles[x, y];
-            }
-        }
-        return null;
-    }
-
-    public bool TileMeeting(Rectangle rect) => TilePlace(rect) != null;
-
-    public event EventHandler<EventArgs> DrawOrderChanged;
-    public event EventHandler<EventArgs> VisibleChanged;
+    public int Width => width;
+    public int Height => height;
 
     public World(int width, int height)
     {
         this.width = MathHelper.Max(width, 80);
         this.height = MathHelper.Max(height, 45);
-        _tiles = new Tile[this.width, this.height];
+        _tiles = new int[this.width, this.width];
 
-        _textureCache = new Dictionary<string, Texture2D>
-        {
-            { "air", null }
-        };
-
-        for(int x = 0; x < this.width; x++)
-        {
-            for(int y = 0; y < this.height; y++)
-            {
-                _tiles[x, y] = new Tile();
-            }
-        }
-
-        _collisions = new Rectangle[this.width, this.height];
+        _collisions = new Rectangle[this.width, this.width];
     }
 
     public Rectangle ValidateArea(Rectangle rectangle)
     {
-        var area = new Rectangle(rectangle.Location, rectangle.Size);
-
         return new(
-            Math.Clamp(rectangle.X, 0, width - 1),
-            Math.Clamp(rectangle.Y, 0, height - 1),
-            Math.Clamp(rectangle.X + rectangle.Width, rectangle.X + 1, width) - rectangle.X,
-            Math.Clamp(rectangle.Y + rectangle.Height, rectangle.Y + 1, height) - rectangle.Y
+            Math.Clamp(rectangle.X, 0, Width - 1),
+            Math.Clamp(rectangle.Y, 0, Height - 1),
+            Math.Clamp(rectangle.X + rectangle.Width, rectangle.X + 1, Width) - rectangle.X,
+            Math.Clamp(rectangle.Y + rectangle.Height, rectangle.Y + 1, Height) - rectangle.Y
         );
     }
 
@@ -134,37 +99,14 @@ public class World : IDisposable, IDrawable
         {
             for(int y = _area.Y; y < _area.Y + _area.Height; y++)
             {
-                Tile tile = _tiles[x, y];
+                int tile = _tiles[x, y];
 
-                Rectangle rect = new Rectangle(-10000, -10000, 1, 1);
-                if(tile.id != "air")
-                    rect = new Rectangle(x * tileSize, y * tileSize, tileSize, tileSize);
+                Rectangle rect = Rectangle.Empty;
+                if(tile != 0)
+                    rect = new Rectangle(x * TileSize, y * TileSize, TileSize, TileSize);
                 _collisions[x, y] = rect;
-
-                if(tile.id == "air") continue;
-
-                RefreshTileShape(tile, x, y);
             }
         }
-    }
-
-    private void RefreshTileShape(Tile tile, int x, int y)
-    {
-        byte matches = 0b0000;
-
-        if((y > 0 && _tiles[x, y - 1].id == tile.id) || y <= 0)
-            matches |= 0b0001;
-
-        if((x < width - 1 && _tiles[x + 1, y].id == tile.id) || x >= width - 1)
-            matches |= 0b0010;
-
-        if((y < height - 1 && _tiles[x, y + 1].id == tile.id) || y >= height - 1)
-            matches |= 0b0100;
-
-        if((x > 0 && _tiles[x - 1, y].id == tile.id) || x <= 0)
-            matches |= 0b1000;
-
-        tile.shape = matches;
     }
 
     public void LoadContent()
@@ -182,33 +124,84 @@ public class World : IDisposable, IDrawable
         SpriteSystem.Update();
     }
 
-    public void Draw(GameTime gameTime)
+    public void Draw()
     {
-        if(_spriteBatch is null) return;
+        if(SpriteBatch is null) return;
 
-        for(int x = 0; x < width; x++)
+        for(int x = 0; x < Width; x++)
         {
-            for(int y = 0; y < height; y++)
+            for(int y = 0; y < Height; y++)
             {
-                Tile tile = _tiles[x, y];
-                if(tile.id == "air") continue;
+                int tile = _tiles[x, y];
+                if(tile == 0) continue;
 
-                Texture2D texture = Main.GetContent<Texture2D>("Images/Tiles/" + tile.id);
-                if(texture == null) continue;
+                if(Main.DebugMode) SpriteBatch.Draw(Main.GetContent<Texture2D>("Images/Other/tileOutline"), _collisions[x, y], Color.Red * 0.5f);
+            }
+        }
 
-                Rectangle UV = Tile.GetShapeUV(tile.shape).ScalePosition(tileSize);
+        if(!Visible) return;
 
-                _spriteBatch.Draw(
-                    texture,
-                    new Vector2(x * tileSize, y * tileSize),
-                    UV,
-                    Color.White,
-                    0,
-                    Vector2.Zero,
-                    new Vector2(1, 1),
-                    SpriteEffects.None,
-                    0f
-                );
+        if(Main.DebugMode)
+        {
+            foreach(var rect in JumpThroughs)
+            {
+                SpriteBatch.Draw(Main.OnePixel, rect, Color.LimeGreen * 0.5f);
+            }
+
+            foreach(var tri in JumpThroughSlopes)
+            {
+                SpriteBatch.Draw(Main.OnePixel, new Rectangle(tri.P1 - new Point(1), new(2)), Color.LimeGreen * 0.75f);
+                SpriteBatch.Draw(Main.OnePixel, new Rectangle(tri.P2 - new Point(1), new(2)), Color.LimeGreen * 0.75f);
+                SpriteBatch.Draw(Main.OnePixel, new Rectangle(tri.P3 - new Point(1), new(2)), Color.LimeGreen * 0.75f);
+
+                Point min = new(MathHelper.Min(MathHelper.Min(tri.P1.X, tri.P2.X), tri.P3.X), MathHelper.Min(MathHelper.Min(tri.P1.Y, tri.P2.Y), tri.P3.Y));
+                Point max = new(MathHelper.Max(MathHelper.Max(tri.P1.X, tri.P2.X), tri.P3.X), MathHelper.Max(MathHelper.Max(tri.P1.Y, tri.P2.Y), tri.P3.Y));
+
+                for(int x = 0; x < max.X - min.X; x++)
+                {
+                    for(int y = 0; y < max.Y - min.Y; y++)
+                    {
+                        var p = new Point(x, y) + min;
+
+                        if(tri.Contains(p))
+                        {
+                            SpriteBatch.Draw(Main.OnePixel, new Rectangle(p, new(1)), Color.LimeGreen * 0.5f);
+                        }
+                    }
+                }
+            }
+
+            foreach(var tri in Slopes)
+            {
+                SpriteBatch.Draw(Main.OnePixel, new Rectangle(tri.P1 - new Point(1), new(2)), Color.Red * 0.75f);
+                SpriteBatch.Draw(Main.OnePixel, new Rectangle(tri.P2 - new Point(1), new(2)), Color.Red * 0.75f);
+                SpriteBatch.Draw(Main.OnePixel, new Rectangle(tri.P3 - new Point(1), new(2)), Color.Red * 0.75f);
+
+                Point min = new(MathHelper.Min(MathHelper.Min(tri.P1.X, tri.P2.X), tri.P3.X), MathHelper.Min(MathHelper.Min(tri.P1.Y, tri.P2.Y), tri.P3.Y));
+                Point max = new(MathHelper.Max(MathHelper.Max(tri.P1.X, tri.P2.X), tri.P3.X), MathHelper.Max(MathHelper.Max(tri.P1.Y, tri.P2.Y), tri.P3.Y));
+
+                for(int x = 0; x < max.X - min.X; x++)
+                {
+                    for(int y = 0; y < max.Y - min.Y; y++)
+                    {
+                        var p = new Point(x, y) + min;
+
+                        if(tri.Contains(p))
+                        {
+                            SpriteBatch.Draw(Main.OnePixel, new Rectangle(p, new(1)), Color.Red * 0.5f);
+                        }
+                    }
+                }
+            }
+
+            foreach(var entity in GetAllEntitiesWithComponent<Solid>())
+            {
+                SpriteBatch.Draw(Main.OnePixel, entity.GetComponent<Solid>().WorldBoundingBox, Color.Orange * 0.5f);
+            }
+
+            foreach(var actor in GetAllEntitiesWithComponent<Actor>())
+            {
+                SpriteBatch.Draw(Main.OnePixel, actor.GetComponent<Actor>().WorldBoundingBox, Color.Red * 0.5f);
             }
         }
 
@@ -220,26 +213,23 @@ public class World : IDisposable, IDrawable
         SpriteSystem.Draw();
     }
 
-    public void DrawSprite(Texture2D texture, Vector2 position, Rectangle? sourceRectangle, Color color, float rotation, Vector2 origin, Vector2 scale, SpriteEffects effects, float layerDepth)
+    public void DrawSprite(Texture2D texture, Vector2 position, Rectangle? sourceRectangle, Color color, float rotation, Vector2 origin, Vector2 scale, SpriteEffects effects = SpriteEffects.None, float layerDepth = 0)
     {
-        _spriteBatch.Draw(texture, position, sourceRectangle, color, rotation, origin, scale, effects, layerDepth);
+        SpriteBatch.Draw(texture, position, sourceRectangle, color, rotation, origin, scale, effects, layerDepth);
     }
 
-    public void DrawSprite(Texture2D texture, Rectangle destinationRectangle, Rectangle? sourceRectangle, Color color, float rotation, Vector2 origin, SpriteEffects effects, float layerDepth)
+    public void DrawSprite(Texture2D texture, Rectangle destinationRectangle, Rectangle? sourceRectangle, Color color, float rotation, Vector2 origin, SpriteEffects effects = SpriteEffects.None, float layerDepth = 0)
     {
-        _spriteBatch.Draw(texture, destinationRectangle, sourceRectangle, color, rotation, origin, effects, layerDepth);
+        SpriteBatch.Draw(texture, destinationRectangle, sourceRectangle, color, rotation, origin, effects, layerDepth);
     }
 
     public void DrawSprite(Sprite sprite, Transform transform)
     {
-        _spriteBatch.Draw(sprite.texture, transform.position.ToVector2(), sprite.sourceRectangle, sprite.color, transform.rotation, sprite.origin.ToVector2(), transform.scale, sprite.spriteEffects, sprite.LayerDepth);
+        SpriteBatch.Draw(sprite.texture, transform.position.ToVector2(), sprite.sourceRectangle, sprite.color, transform.rotation, sprite.origin.ToVector2(), transform.scale, sprite.spriteEffects, sprite.LayerDepth);
     }
 
     public void Dispose()
     {
-        _textureCache.Clear();
-        _textureCache = null;
-
         _entityWorld.Dispose();
         _entityWorld = null;
 
@@ -272,7 +262,47 @@ public class World : IDisposable, IDrawable
         return entities;
     }
 
-    public Solid? SolidPlace(Rectangle bbox, Point position)
+    public bool TileMeeting(Rectangle rect)
+    {
+        Rectangle[,] cols = Collisions;
+        for(int x = 0; x < Width; x++)
+        {
+            for(int y = 0; y < Height; y++)
+            {
+                var r = cols[x, y];
+                if(r == Rectangle.Empty) continue;
+
+                if(rect.Intersects(r)) return true;
+            }
+        }
+        foreach(var tri in Slopes)
+        {
+            if(tri.Intersects(rect)) return true;
+        }
+        return false;
+    }
+
+    public Rectangle? JumpThroughPlace(Rectangle bbox)
+    {
+        foreach(var rect in JumpThroughs)
+        {
+            if(rect.Intersects(bbox)) return rect;
+        }
+        return null;
+    }
+
+    public Triangle? JumpThroughSlopePlace(Rectangle bbox)
+    {
+        foreach(var tri in JumpThroughSlopes)
+        {
+            if(tri.Intersects(bbox)) return tri;
+        }
+        return null;
+    }
+
+    public bool JumpThroughMeeting(Rectangle rect) => JumpThroughPlace(rect) is not null || JumpThroughSlopePlace(rect) is not null;
+
+    public Solid? SolidPlace(Rectangle bbox)
     {
         foreach(var entity in _entityWorld.Entities)
         {
@@ -281,50 +311,26 @@ public class World : IDisposable, IDrawable
             Solid solid = entity.GetComponent<Solid>();
             if(solid is not null)
             {
-                if(solid.Collidable && solid.WorldBoundingBox.Intersects(new(bbox.Location + position, bbox.Size))) return solid;
+                if(solid.Collidable && solid.WorldBoundingBox.Intersects(new(bbox.Location, bbox.Size))) return solid;
             }
         }
         return null;
     }
 
-    public bool SolidMeeting(Rectangle bbox, Point position) => SolidPlace(bbox, position) is not null;
+    public bool SolidMeeting(Rectangle bbox) => SolidPlace(bbox) is not null;
 
-    public string GetTileIdAtPosition(Vector2 position) => GetTileIdAtTilePosition((position / tileSize).ToPoint());
-
-    public string GetTileIdAtTilePosition(Point position)
-    {
-        int x = position.X;
-        int y = position.Y;
-
-        if(!InWorld(x, y)) return "air";
-
-        return _tiles[x, y].id;
-    }
-
-    public Tile? GetTileAtPosition(Vector2 position) => GetTileAtTilePosition((position / tileSize).ToPoint());
-
-    public Tile? GetTileAtTilePosition(Point position)
-    {
-        int x = position.X;
-        int y = position.Y;
-
-        if(!InWorld(x, y)) return null;
-
-        return _tiles[x, y];
-    }
-
-    public void SetTile(string id, Point position)
+    public void SetTile(int id, Point position)
     {
         if(!InWorld(position.X, position.Y)) return;
 
-        _tiles[position.X, position.Y] = new Tile(id);
+        _tiles[position.X, position.Y] = id;
 
-        RefreshTileShapes(new Rectangle(new Point(position.X - 1, position.Y - 1), new Point(3, 3)));
+        RefreshTileShapes(new Rectangle(position.X - 1, position.Y - 1, 3, 3));
     }
 
     public static bool InWorld(World level, int x, int y)
     {
-        return x >= 0 && x < level.width && y >= 0 && y < level.height;
+        return x >= 0 && x < level.Width && y >= 0 && y < level.Height;
     }
 
     public static bool InWorld(World level, Point pos)

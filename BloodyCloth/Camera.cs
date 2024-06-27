@@ -1,6 +1,7 @@
 // Source: https://raw.githubusercontent.com/IrishBruse/LDtkMonogame/main/LDtk.LevelViewer/Camera.cs
 // License: MIT
 
+using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -9,6 +10,10 @@ namespace BloodyCloth;
 public class Camera
 {
     readonly GraphicsDevice graphicsDevice;
+    readonly Random random;
+    float currentShake;
+    float shakeMagnitude;
+    int shakeTime;
 
     public Vector2 Position { get; set; } = Vector2.Zero;
 
@@ -19,10 +24,46 @@ public class Camera
     public Camera(GraphicsDevice graphicsDevice)
     {
         this.graphicsDevice = graphicsDevice;
+        this.random = new();
+    }
+
+    public void SetShake(float shakeMagnitude, int shakeTime)
+    {
+        if(shakeMagnitude > this.shakeMagnitude)
+        {
+            this.currentShake = shakeMagnitude;
+            this.shakeMagnitude = shakeMagnitude;
+        }
+        if(shakeTime > this.shakeTime)
+        {
+            this.shakeTime = shakeTime;
+        }
+    }
+
+    public void AddShake(float shakeMagnitude, int shakeTime)
+    {
+        this.currentShake += shakeMagnitude;
+        if(shakeMagnitude > this.shakeMagnitude)
+        {
+            this.shakeMagnitude = shakeMagnitude;
+        }
+        if(shakeTime > this.shakeTime)
+        {
+            this.shakeTime = shakeTime;
+        }
     }
 
     public void Update()
     {
-        Transform = Matrix.CreateTranslation(new Vector3(Extensions.Round(-Position.X), Extensions.Round(-Position.Y), 0)) * Matrix.CreateScale(Zoom);
+        Vector2 basePosition = Position;
+
+        Vector2 shakePosition = basePosition - new Vector2(
+            (random.NextSingle() * currentShake * 2) - (currentShake * 0.5f),
+            (random.NextSingle() * currentShake * 2) - (currentShake * 0.5f)
+        );
+
+        Vector2 finalPosition = Vector2.Round(shakePosition);
+
+        Transform = Matrix.CreateTranslation(new Vector3(-finalPosition, 0)) * Matrix.CreateScale(Zoom);
     }
 }

@@ -84,7 +84,7 @@ namespace BloodyCloth.Ecs.Components
             int inputDir = Input.GetDown(_inputMapping.Right).ToInt32() - Input.GetDown(_inputMapping.Left).ToInt32();
 
             bool wasOnGround = _onGround;
-            _onGround = Main.World.TileMeeting(actor.WorldBoundingBox.Shift(new(0, 1))) || Main.World.SolidMeeting(actor.WorldBoundingBox, new(0, 1));
+            _onGround = Main.World.TileMeeting(actor.WorldBoundingBox.Shift(new(0, 1))) || Main.World.SolidMeeting(actor.WorldBoundingBox.Shift(new(0, 1)));
 
             if(!wasOnGround && _onGround)
             {

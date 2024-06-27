@@ -67,6 +67,8 @@ namespace BloodyCloth.Ecs.Components
                 var riding = GetAllRidingActors();
                 var allActors = Main.World.GetAllEntitiesWithComponent<Actor>();
 
+                bool playerRiding = Main.Player.IsRiding(this);
+
                 // Make this Solid non-collidable for Actors,
                 // so that Actors moved by it do not get stuck on it
                 Collidable = false;
@@ -81,7 +83,7 @@ namespace BloodyCloth.Ecs.Components
                         {
                             Main.Player.MoveX(this.WorldBoundingBox.Right - Main.Player.Left.X, Main.Player.Squish);
                         }
-                        else if(Main.Player.IsRiding(this))
+                        else if(playerRiding)
                         {
                             Main.Player.MoveX(moveX, null);
                         }
@@ -107,7 +109,7 @@ namespace BloodyCloth.Ecs.Components
                         {
                             Main.Player.MoveX(this.WorldBoundingBox.Left - Main.Player.Right.X, Main.Player.Squish);
                         }
-                        else if(Main.Player.IsRiding(this))
+                        else if(playerRiding)
                         {
                             Main.Player.MoveX(moveX, null);
                         }
@@ -139,7 +141,7 @@ namespace BloodyCloth.Ecs.Components
                         {
                             Main.Player.MoveY(this.WorldBoundingBox.Bottom - Main.Player.Top.Y, Main.Player.Squish);
                         }
-                        else if(Main.Player.IsRiding(this))
+                        else if(playerRiding)
                         {
                             Main.Player.MoveY(moveY, null);
                         }
@@ -165,7 +167,7 @@ namespace BloodyCloth.Ecs.Components
                         {
                             Main.Player.MoveY(this.WorldBoundingBox.Top - Main.Player.Bottom.Y, Main.Player.Squish);
                         }
-                        else if(Main.Player.IsRiding(this))
+                        else if(playerRiding)
                         {
                             Main.Player.MoveY(moveY, null);
                         }

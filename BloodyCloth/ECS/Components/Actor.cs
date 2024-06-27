@@ -16,6 +16,8 @@ namespace BloodyCloth.Ecs.Components
 
         Vector2 velocity = Vector2.Zero;
 
+        public bool CollidesWithJumpthroughs { get; set; } = true;
+
         public Rectangle BoundingBox
         {
             get => bbox;
@@ -76,7 +78,7 @@ namespace BloodyCloth.Ecs.Components
                 {
                     if(
                         !Main.World.TileMeeting(WorldBoundingBox.Shift(new(sign, 0)))
-                        && !Main.World.SolidMeeting(WorldBoundingBox, new(sign, 0))
+                        && !Main.World.SolidMeeting(WorldBoundingBox.Shift(new(sign, 0)))
                     )
                     {
                         transform.position.X += sign;
@@ -102,7 +104,12 @@ namespace BloodyCloth.Ecs.Components
                 {
                     if(
                         !Main.World.TileMeeting(WorldBoundingBox.Shift(new(0, sign)))
-                        && !Main.World.SolidMeeting(WorldBoundingBox, new(0, sign))
+                        && !Main.World.SolidMeeting(WorldBoundingBox.Shift(new(0, sign)))
+                        && !(
+                            CollidesWithJumpthroughs && sign == 1
+                            && Main.World.JumpThroughMeeting(WorldBoundingBox.Shift(new(0, sign)))
+                            && !Main.World.JumpThroughMeeting(WorldBoundingBox)
+                        )
                     )
                     {
                         transform.position.Y += sign;

@@ -10,34 +10,36 @@ using LDtk;
 
 using BloodyCloth.Ecs.Components;
 using BloodyCloth.IO;
+using LDtk.Renderer;
+using System.Collections.Generic;
+using System.Text.Json.Nodes;
+using System.Text.Json;
 
 namespace BloodyCloth;
 
 public class Main : Game
 {
+    internal const string ValidChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789*+=-–—<>_#&@%^~$.,!¡?¿:;`'\"‘’“”«»|/\\()[]{}ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜàáâãäåæçèéêëìíîïñòóôõöùúûüŸÿßẞŒœ‚„°©®™¢€£¥•…‹›";
+
+    private static Main _instance = null;
     private static GraphicsDeviceManager _graphics;
     private static SpriteBatch _spriteBatch;
-    private static ContentManager _content;
     private static Logger _logger = new();
     private static int _pixelScale = 3;
     private static Point _screenSize = new Point(640, 360);
     private static World _world;
-    private static bool _paused;
     private static Camera camera;
 
-    private SpriteFont _font;
     private RenderTarget2D _renderTarget;
-    private LDtkLevel lDtkLevel;
     private LDtkFile lDtkFile;
     private LDtkWorld lDtkWorld;
-
-    internal const string ValidChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789*+=-–—<>_#&@%^~$.,!¡?¿:;`'\"‘’“”«»|/\\()[]{}ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜàáâãäåæçèéêëìíîïñòóôõöùúûüŸÿßẞŒœ‚„°©®™¢€£¥•…‹›";
+    private ExampleRenderer lDtkRenderer;
 
     public static Logger Logger => _logger;
     public static int PixelScale => _pixelScale;
     public static Point ScreenSize => _screenSize;
     public static World World => _world;
-    public static bool IsPaused => _paused;
+    public static bool IsPaused => !_instance.IsActive;
     public static Camera Camera => camera;
 
     public static Point MousePosition => new(Mouse.GetState().X / _pixelScale, Mouse.GetState().Y / _pixelScale);
@@ -49,6 +51,9 @@ public class Main : Game
     public static Player Player { get; private set; }
 
     public static string SaveDataPath => new PathBuilder{AppendFinalSeparator = true}.Create(PathBuilder.LocalAppdataPath, AppMetadata.Name);
+    public static string ProgramPath => AppDomain.CurrentDomain.BaseDirectory;
+
+    public static bool DebugMode { get; private set; }
 
     public static class AppMetadata
     {
@@ -67,6 +72,8 @@ public class Main : Game
 
     public Main()
     {
+        _instance = this;
+
         _graphics = new GraphicsDeviceManager(this)
         {
             PreferMultiSampling = false,
@@ -75,8 +82,7 @@ public class Main : Game
             PreferredBackBufferHeight = _screenSize.Y * _pixelScale,
         };
 
-        _content = Content;
-        _content.RootDirectory = "Content";
+        Content.RootDirectory = "Content";
         IsMouseVisible = true;
         IsFixedTimeStep = true;
     }
@@ -103,40 +109,66 @@ public class Main : Game
 
         _world = new World(120, 45);
 
-        _world.SetTile("stone", new(10, 13));
-        _world.SetTile("stone", new(10, 12));
-        _world.SetTile("stone", new(11, 13));
-        _world.SetTile("stone", new(12, 13));
-        _world.SetTile("stone", new(13, 13));
-        _world.SetTile("stone", new(14, 13));
-
-        _world.SetTile("stone", new(119, 44));
-
         {
             var silly = _world.Entities.Create();
 
-            silly.GetComponent<Transform>().position = new((int)(15.5f * World.tileSize), 12 * World.tileSize);
+            silly.GetComponent<Transform>().position = new((int)(23.5f * World.TileSize), 14 * World.TileSize);
 
             silly.AddComponent(new Sprite {
                 texture = Content.Load<Texture2D>("Images/Tiles/stone"),
-                sourceRectangle = new(Point.Zero, new(World.tileSize)),
+                sourceRectangle = new(Point.Zero, new(World.TileSize)),
             });
 
             var solid = silly.AddComponent(new Solid {
                 DefaultBehavior = true,
             });
-            solid.BoundingBox = new Rectangle(Point.Zero, new (World.tileSize));
+            solid.BoundingBox = new Rectangle(Point.Zero, new (World.TileSize));
 
             silly.AddComponent(new OscillatePosition());
         }
 
         base.Initialize();
 
-        lDtkFile = LDtkFile.FromFile(PathBuilder.LocalAppdataPath + "/Programs/ldtk/extraFiles/samples/Typical_2D_platformer_example.ldtk");
+        lDtkRenderer = new(_spriteBatch);
+
+        lDtkFile = LDtkFile.FromFile(ProgramPath + "/Content/Levels/Level0.ldtk");
+
         lDtkWorld = lDtkFile.LoadSingleWorld();
+
+        foreach(var level in lDtkWorld.Levels)
+        {
+            lDtkRenderer.PrerenderLevel(level);
+
+            var layer = level.LayerInstances[1];
+            for(int i = 0; i < layer.EntityInstances.Length; i++)
+            {
+                var e = layer.EntityInstances[i];
+                if(e._Identifier == "JumpThrough")
+                    _world.JumpThroughs.Add(new(e.Px, new(e.Width, e.Height)));
+
+                if(e._Identifier.EndsWith("Slope"))
+                {
+                    Point point1 = e.Px + new Point(layer._PxTotalOffsetX, layer._PxTotalOffsetY) + level.Position;
+                    Point point2 = new Point(((JsonElement)e.FieldInstances[0]._Value)[0].GetProperty("cx").GetInt32() * World.TileSize, ((JsonElement)e.FieldInstances[0]._Value)[0].GetProperty("cy").GetInt32() * World.TileSize) + new Point(layer._PxTotalOffsetX, layer._PxTotalOffsetY) + level.Position;
+                    Point point3 = new Point(((JsonElement)e.FieldInstances[0]._Value)[1].GetProperty("cx").GetInt32() * World.TileSize, ((JsonElement)e.FieldInstances[0]._Value)[1].GetProperty("cy").GetInt32() * World.TileSize) + new Point(layer._PxTotalOffsetX, layer._PxTotalOffsetY) + level.Position;
+
+                    if(e._Identifier == "JumpThrough_Slope")
+                        _world.JumpThroughSlopes.Add(new(point1, point2, point3));
+                    if(e._Identifier == "Slope")
+                        _world.Slopes.Add(new(point1, point2, point3));
+                }
+            }
+
+            var layer2 = level.LayerInstances[4];
+            for(int i = 0; i < layer2.IntGridCsv.Length; i++)
+            {
+                if(layer2.IntGridCsv[i] == 1) _world.SetTile(1, new(i % layer2._CWid, i / layer2._CWid));
+            }
+        }
 
         _logger.LogInfo(new PathBuilder{AppendFinalSeparator = true}.Create(PathBuilder.LocalAppdataPath, AppMetadata.Name));
         _logger.LogInfo(AppMetadata.Version);
+        _logger.LogInfo(ProgramPath);
     }
 
     protected override void LoadContent()
@@ -160,19 +192,13 @@ public class Main : Game
 
     protected override void Update(GameTime gameTime)
     {
-        if(!IsActive && !_paused)
-        {
-            // pause game on unfocus
-        }
-
         Input.RefreshKeyboardState();
         Input.RefreshGamePadState(PlayerIndex.One);
         Input.RefreshMouseState();
 
         if(Input.GetPressed(Keys.F1))
         {
-            _logger.LogInfo(SaveDataPath + Path.DirectorySeparatorChar);
-            _logger.LogInfo(AppMetadata.Version);
+            DebugMode = !DebugMode;
         }
 
         if(Input.GetPressed(Buttons.Back, PlayerIndex.One) || Input.GetPressed(Keys.Escape))
@@ -183,8 +209,8 @@ public class Main : Game
         _world.Update();
 
         camera.Zoom = 1;
-        camera.Position += (Player.position.ToVector2() + new Vector2(-ScreenSize.X / 2f, -ScreenSize.Y / 2f) - camera.Position) / 4f;
-        camera.Position = Vector2.Clamp(camera.Position, Vector2.Zero, (World.Bounds.Size.ToVector2() * World.tileSize) - ScreenSize.ToVector2());
+        camera.Position += (Player.Center.ToVector2() + new Vector2(-ScreenSize.X / 2f, -ScreenSize.Y / 2f) - camera.Position) / 4f;
+        camera.Position = Vector2.Clamp(camera.Position, Vector2.Zero, (World.Bounds.Size.ToVector2() * World.TileSize) - ScreenSize.ToVector2());
         camera.Update();
 
         base.Update(gameTime);
@@ -197,21 +223,26 @@ public class Main : Game
 
         _spriteBatch.Begin(samplerState: SamplerState.PointWrap, transformMatrix: camera.Transform);
 
-        _spriteBatch.DrawStringSpacesFix(RegularFontItalic, "The quick brown fox jumps over the lazy dog.", new(11, 54), Color.White, 4, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
-        _spriteBatch.DrawStringSpacesFix(RegularFontBold, "The quick brown fox jumps over the lazy dog.", new(10, 10), Color.White, 3, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
-        _spriteBatch.DrawStringSpacesFix(SmallFontBold, "The quick brown fox jumps over the lazy dog.", new(10, 22), Color.White, 2, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
-        _spriteBatch.DrawStringSpacesFix(RegularFont, "The quick brown fox jumps over the lazy dog.", new(10, 32), Color.White, 4, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
-        _spriteBatch.DrawStringSpacesFix(SmallFont, "The quick brown fox jumps over the lazy dog.", new(10, 44), Color.White, 3, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+        foreach(var level in lDtkWorld.Levels)
+        {
+            lDtkRenderer.RenderPrerenderedLevel(level);
+        }
 
-        _spriteBatch.DrawStringSpacesFix(RegularFontBoldItalic, "The quick brown fox jumps over the lazy dog.", new(11, 66), Color.White, 4, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
-        _spriteBatch.DrawStringSpacesFix(RegularFontBoldItalic, "The quick brown fox jumps over the lazy dog.", new(12, 66), Color.White, 4, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+        _world.Draw();
+
+        // _spriteBatch.DrawStringSpacesFix(RegularFontItalic, "The quick brown fox jumps over the lazy dog.", new(11, 54), Color.White, 4, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+        // _spriteBatch.DrawStringSpacesFix(RegularFontBold, "The quick brown fox jumps over the lazy dog.", new(10, 10), Color.White, 3, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+        // _spriteBatch.DrawStringSpacesFix(SmallFontBold, "The quick brown fox jumps over the lazy dog.", new(10, 22), Color.White, 2, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+        // _spriteBatch.DrawStringSpacesFix(RegularFont, "The quick brown fox jumps over the lazy dog.", new(10, 32), Color.White, 4, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+        // _spriteBatch.DrawStringSpacesFix(SmallFont, "The quick brown fox jumps over the lazy dog.", new(10, 44), Color.White, 3, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+
+        // _spriteBatch.DrawStringSpacesFix(RegularFontBoldItalic, "The quick brown fox jumps over the lazy dog.", new(11, 66), Color.White, 4, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+        // _spriteBatch.DrawStringSpacesFix(RegularFontBoldItalic, "The quick brown fox jumps over the lazy dog.", new(12, 66), Color.White, 4, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+
+        Player.Draw(_spriteBatch);
 
         _spriteBatch.DrawStringSpacesFix(RegularFontBold, $"{_screenSize.X}x{_screenSize.Y}*{_pixelScale}", new(10, _screenSize.Y - 10), Color.White, 4, 0, Vector2.UnitY * 14, 1, SpriteEffects.None, 0);
-        _spriteBatch.DrawStringSpacesFix(RegularFont, $"{MousePosition.X},{MousePosition.Y}", new(10, _screenSize.Y - 20), Color.White, 4, 0, Vector2.UnitY * 14, 1, SpriteEffects.None, 0);
-
-        _world.Draw(gameTime);
-
-        Player.Draw();
+        _spriteBatch.DrawStringSpacesFix(RegularFont, $"{MousePosition.X}, {MousePosition.Y}", new(10, _screenSize.Y - 20), Color.White, 4, 0, Vector2.UnitY * 14, 1, SpriteEffects.None, 0);
 
         _spriteBatch.End();
 
@@ -225,8 +256,33 @@ public class Main : Game
         base.Draw(gameTime);
     }
 
+    private static readonly List<string> missingAssets = new();
+
     public static T GetContent<T>(string assetName)
     {
-        return _content.Load<T>(assetName);
+        if(missingAssets.Contains(assetName)) return default;
+
+        try
+        {
+            return _instance.Content.Load<T>(assetName);
+        }
+        catch(Exception e)
+        {
+            Console.Error.WriteLine(e.GetType().FullName + $": The content file \"{assetName}\" was not found.");
+            missingAssets.Add(assetName);
+            return default;
+        }
+    }
+
+    public static void DrawLine(Point start, Point end, Color color)
+    {
+        VertexPositionColor[] verts = new VertexPositionColor[] {
+            new(new(start.ToVector2(), 0.2f), color),
+            new(new(start.ToVector2() + Vector2.One * 2, 0.2f), color),
+            new(new(end.ToVector2() + Vector2.One * 2, 0.2f), color),
+            new(new(end.ToVector2(), 0.2f), color),
+        };
+
+        _graphics.GraphicsDevice.DrawUserPrimitives(PrimitiveType.TriangleStrip, verts, 0, 1);
     }
 }
