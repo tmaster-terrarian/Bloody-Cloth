@@ -124,7 +124,7 @@ public class Main : Game
             {
                 var e = layer.EntityInstances[i];
                 if(e._Identifier == "JumpThrough")
-                    _world.JumpThroughs.Add(new(e.Px, new(e.Width, e.Height)));
+                    _world.JumpThroughs.Add(new(e.Px, new(e.Width, MathHelper.Max(e.Height - 1, 1))));
 
                 if(e._Identifier.EndsWith("Slope"))
                 {
@@ -154,8 +154,6 @@ public class Main : Game
     protected override void LoadContent()
     {
         Renderer.LoadContent(Content);
-
-        _world.SpriteBatch = Renderer.SpriteBatch;
 
         Player = new Player();
     }

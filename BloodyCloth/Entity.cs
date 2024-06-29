@@ -1,5 +1,8 @@
 using System;
+
 using Microsoft.Xna.Framework;
+
+using BloodyCloth.Utils;
 
 namespace BloodyCloth;
 
@@ -27,6 +30,8 @@ public abstract class Entity
 	public virtual bool Active { get; private set; } = true;
 
     public virtual bool CollidesWithJumpthroughs { get; protected set; } = true;
+
+    public bool OnGround { get; protected set; }
 
 	public float Rotation { get; protected set; }
 
@@ -105,6 +110,37 @@ public abstract class Entity
 			position = new(value.X - (Width/2), value.Y - Height);
 		}
 	}
+
+    public bool CheckColliding(Rectangle rectangle, bool ignoreJumpThroughs = false)
+    {
+        if(Main.World.TileMeeting(rectangle) || Main.World.SolidMeeting(rectangle)) return true;
+
+        if(!ignoreJumpThroughs && CollidesWithJumpthroughs)
+        {
+            return CheckCollidingJumpthrough(rectangle);
+        }
+
+        return false;
+    }
+
+    public bool CheckCollidingJumpthrough(Rectangle rectangle)
+    {
+        // I bet you 100% that this is really laggy in large scale usage lmao
+
+        Rectangle newRect = new(rectangle.Left, rectangle.Bottom - 1, rectangle.Width, 1);
+
+        Rectangle rect = Main.World.JumpThroughPlace(newRect) ?? Rectangle.Empty;
+        Rectangle rect2 = Main.World.JumpThroughPlace(newRect.Shift(0, -1)) ?? Rectangle.Empty;
+
+        if(rect != Rectangle.Empty) return rect != rect2;
+
+        Triangle tri = Main.World.JumpThroughSlopePlace(newRect) ?? Triangle.Empty;
+        Triangle tri2 = Main.World.JumpThroughSlopePlace(newRect.Shift(0, -1)) ?? Triangle.Empty;
+
+        if(tri != Triangle.Empty) return tri != tri2;
+
+        return false;
+    }
 
     public float AngleTo(Vector2 target)
 	{

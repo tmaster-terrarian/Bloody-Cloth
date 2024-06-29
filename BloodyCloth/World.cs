@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 using BloodyCloth.Ecs;
 using BloodyCloth.Ecs.Components;
+using BloodyCloth.Graphics;
 
 namespace BloodyCloth;
 
@@ -14,7 +15,7 @@ public class World : IDisposable
     private Rectangle[,] _collisions = null;
     private EntityWorld _entityWorld = new();
 
-    public SpriteBatch SpriteBatch { get; set; }
+    private static SpriteBatch SpriteBatch => Renderer.SpriteBatch;
 
     private readonly int[,] _tiles;
 
@@ -114,8 +115,6 @@ public class World : IDisposable
 
     public void Draw()
     {
-        if(SpriteBatch is null) return;
-
         for(int x = 0; x < Width; x++)
         {
             for(int y = 0; y < Height; y++)
@@ -123,7 +122,7 @@ public class World : IDisposable
                 int tile = _tiles[x, y];
                 if(tile == 0) continue;
 
-                if(Main.DebugMode) SpriteBatch.Draw(Main.GetContent<Texture2D>("Images/Other/tileOutline"), _collisions[x, y], Color.Red * 0.5f);
+                if(Main.DebugMode) NineSlice.DrawNineSlice(Main.GetContent<Texture2D>("Images/Other/tileOutline"), _collisions[x, y], null, new Point(1), new Point(1), Color.Red * 0.5f);
             }
         }
 

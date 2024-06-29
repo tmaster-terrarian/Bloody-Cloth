@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BloodyCloth.Graphics;
 using BloodyCloth.Utils;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -40,7 +41,7 @@ public class Player : Entity
     private float moveSpeed = 2.5f;
     private float jumpSpeed = -4.5f;
     private float gravity = 0.2f;
-    public Point HitboxOffset => new(11, 6);
+    public Point HitboxOffset => new(10, 10);
 
     public override bool Active => true;
 
@@ -50,16 +51,14 @@ public class Player : Entity
         // rebind here with Name = Keys
     };
 
-    public bool OnGround { get; set; }
-
     public bool GamePad { get; set; }
 
     public bool Visible { get; private set; } = true;
 
     public Player()
     {
-        Width = 16;
-        Height = 26;
+        Width = 12;
+        Height = 38;
 
         Bottom = new(100, 104);
 
@@ -72,39 +71,6 @@ public class Player : Entity
     {
         textures.Add(texture);
         frameCounts.Add(frameCount);
-    }
-
-    bool CheckColliding(Rectangle rectangle, bool ignoreJumpThroughs = false)
-    {
-        if(Main.World.TileMeeting(rectangle) || Main.World.SolidMeeting(rectangle)) return true;
-
-        if(!ignoreJumpThroughs && CollidesWithJumpthroughs)
-        {
-            return CheckCollidingJumpthrough(rectangle);
-        }
-
-        return false;
-    }
-
-    bool CheckCollidingJumpthrough(Rectangle rectangle)
-    {
-        // I bet you 100% that this is really laggy in large scale usage lmao
-
-        Rectangle newRect = new(rectangle.Left, rectangle.Bottom - 1, rectangle.Width, 1);
-
-        Triangle tri = Main.World.JumpThroughSlopePlace(newRect) ?? Triangle.Empty;
-        Triangle tri2 = Main.World.JumpThroughSlopePlace(newRect.Shift(0, -1)) ?? Triangle.Empty;
-
-        Rectangle rect = Main.World.JumpThroughPlace(newRect) ?? Rectangle.Empty;
-        Rectangle rect2 = Main.World.JumpThroughPlace(newRect.Shift(0, -1)) ?? Rectangle.Empty;
-
-        // if tri and not tri2 and not rect2?
-
-        // IDKKKK
-
-        if(tri != Triangle.Empty || rect != Rectangle.Empty) return tri != tri2 || rect != rect2;
-
-        return false;
     }
 
     public void Update()
@@ -120,13 +86,29 @@ public class Player : Entity
             jumpCancelled = false;
         }
 
+        float accel = 0.15f;
+        float fric = 0.1f;
+        if(!OnGround)
+        {
+            accel = 0.07f;
+            fric = 0.05f;
+        }
+
+        useGravity = false;
+
         switch(State)
         {
+            case PlayerState.DoNothing:
+                useGravity = true;
+
+                velocity.X = MathUtil.Approach(velocity.X, 0, fric * 2);
+
+                textureIndex = 0;
+
+                break;
             case PlayerState.Normal:
                 useGravity = true;
 
-                float accel = 0.15f;
-                float fric = 0.1f;
                 if(!OnGround)
                 {
                     accel = 0.07f;
@@ -181,10 +163,11 @@ public class Player : Entity
                 }
                 else
                 {
-                    if(onJumpthrough && Input.GetDown(InputMapping.Down))
+                    if(onJumpthrough && Input.GetDown(InputMapping.Down) && !CheckColliding(Hitbox.Shift(new(0, 1)), true))
                     {
                         position.Y++;
-                        velocity.Y = gravity;
+                        OnGround = CheckColliding(Hitbox.Shift(new(0, 1)));
+                        onJumpthrough = CheckCollidingJumpthrough(Hitbox.Shift(new(0, 1)));
                     }
                 }
 
@@ -226,7 +209,8 @@ public class Player : Entity
             velocity.X = 0;
         });
         MoveY(velocity.Y, () => {
-            velocity.Y = 0;
+            if(!(CheckCollidingJumpthrough(Hitbox.Shift(new(0, 1))) && Input.GetDown(InputMapping.Down)))
+                velocity.Y = 0;
         });
 
         if(fxTrail)
@@ -275,7 +259,7 @@ public class Player : Entity
 
             spriteBatch.Draw(
                 texture2,
-                (image.Position + new Point(this.Width / 2, this.Height / 2)).ToVector2() - Vector2.UnitY * 3,
+                (image.Position + new Point(this.Width / 2, this.Height / 2)).ToVector2() - new Vector2(0, HitboxOffset.Y / 2),
                 drawFrame2,
                 image.Color * (image.Alpha * 0.5f),
                 image.Rotation,
@@ -288,7 +272,9 @@ public class Player : Entity
 
         if(Main.DebugMode)
         {
-            spriteBatch.Draw(Main.OnePixel, Hitbox, Color.Red * 0.5f);
+            // spriteBatch.Draw(Main.OnePixel, Hitbox, Color.Red * 0.5f);
+            var tex = Main.GetContent<Texture2D>("Images/Other/tileOutline");
+            NineSlice.DrawNineSlice(tex, Hitbox, null, new Point(1), new Point(1), Color.Red * 0.5f);
         }
 
         if(!Visible) return;
@@ -299,7 +285,7 @@ public class Player : Entity
 
         spriteBatch.Draw(
             texture,
-            Center.ToVector2() - Vector2.UnitY * 3,
+            Center.ToVector2() - new Vector2(0, HitboxOffset.Y / 2),
             drawFrame,
             Color,
             Rotation,
@@ -314,14 +300,14 @@ public class Player : Entity
     {
         xRemainder += amount;
         int move = Extensions.Round(xRemainder);
-        if(move != 0)
+        xRemainder -= move;
+        if(move != 0 && !CheckColliding(Hitbox, true))
         {
-            xRemainder -= move;
             int sign = Math.Sign(move);
             while(move != 0)
             {
                 bool col1 = CheckColliding(Hitbox.Shift(new(sign, 0)));
-                if(col1 && !CheckColliding(Hitbox.Shift(new(sign, -1))))
+                if(col1 && !CheckColliding(Hitbox.Shift(new(sign, -1)), true))
                 {
                     position.X += sign;
                     position.Y -= 1;
@@ -350,9 +336,9 @@ public class Player : Entity
     {
         yRemainder += amount;
         int move = Extensions.Round(yRemainder);
-        if(move != 0)
+        yRemainder -= move;
+        if(move != 0 && !CheckColliding(Hitbox, true))
         {
-            yRemainder -= move;
             int sign = Math.Sign(move);
             while(move != 0)
             {
@@ -390,4 +376,9 @@ public class Player : Entity
         public Color Color = Color.White;
         public float Rotation;
     }
+}
+
+public class PlayerLoadout
+{
+    
 }
