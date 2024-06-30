@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Data.SqlTypes;
 
@@ -19,6 +20,7 @@ public static class Defs
         if(isInitialized) throw new System.Exception("Content have already been initialized!");
 
         CreateProjectiles();
+        CreateWeaponItems();
 
         isInitialized = true;
     }
@@ -31,5 +33,10 @@ public static class Defs
             TexturePath = "Projectiles/CrossbowBolt",
             GravityDelay = 10,
         });
+    }
+
+    static void CreateWeaponItems()
+    {
+        
     }
 }

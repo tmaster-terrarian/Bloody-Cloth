@@ -1,6 +1,6 @@
 using System;
 
-namespace BloodyCloth;
+namespace BloodyCloth.Experimental;
 
 public readonly struct Fixed : IEquatable<Fixed>
 {

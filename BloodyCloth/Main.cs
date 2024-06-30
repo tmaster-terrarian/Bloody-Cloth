@@ -50,15 +50,24 @@ public class Main : Game
     public static string SaveDataPath => new PathBuilder{AppendFinalSeparator = true}.Create(PathBuilder.LocalAppdataPath, AppMetadata.Name);
     public static string ProgramPath => AppDomain.CurrentDomain.BaseDirectory;
 
-    public static bool DebugMode { get; private set; }
-
     public ulong ElapsedTime { get; private set; }
+
+    public int RoomIndex { get; private set; }
 
     public static class AppMetadata
     {
         public const string Name = "BloodyCloth";
         public const string Version = "0.1.0.5";
         public const int Build = 5;
+    }
+
+    private static bool debugMode;
+    private static bool drawTileCheckingAreas;
+
+    public static class Debug
+    {
+        public static bool Enabled => debugMode;
+        public static bool DrawTileCheckingAreas => drawTileCheckingAreas;
     }
 
     public Main()
@@ -121,32 +130,9 @@ public class Main : Game
         foreach(var level in lDtkWorld.Levels)
         {
             lDtkRenderer.PrerenderLevel(level);
-
-            var layer = level.LayerInstances[1];
-            for(int i = 0; i < layer.EntityInstances.Length; i++)
-            {
-                var e = layer.EntityInstances[i];
-                if(e._Identifier == "JumpThrough")
-                    _world.JumpThroughs.Add(new(e.Px, new(e.Width, MathHelper.Max(e.Height - 1, 1))));
-
-                if(e._Identifier.EndsWith("Slope"))
-                {
-                    Point point1 = e.Px + new Point(layer._PxTotalOffsetX, layer._PxTotalOffsetY) + level.Position;
-                    Point point2 = new Point(((JsonElement)e.FieldInstances[0]._Value)[0].GetProperty("cx").GetInt32() * World.TileSize, ((JsonElement)e.FieldInstances[0]._Value)[0].GetProperty("cy").GetInt32() * World.TileSize) + new Point(layer._PxTotalOffsetX, layer._PxTotalOffsetY) + level.Position;
-
-                    if(e._Identifier == "JumpThrough_Slope")
-                        _world.JumpThroughSlopes.Add(new(point1, point2, 2));
-                    if(e._Identifier == "Slope")
-                        _world.Slopes.Add(new(point1, point2, 2));
-                }
-            }
-
-            var layer2 = level.LayerInstances[4];
-            for(int i = 0; i < layer2.IntGridCsv.Length; i++)
-            {
-                if(layer2.IntGridCsv[i] == 1) _world.SetTile(1, new(i % layer2._CWid, i / layer2._CWid));
-            }
         }
+
+        EnterRoom(lDtkWorld.Levels[0]);
 
         _logger.LogInfo(new PathBuilder{AppendFinalSeparator = true}.Create(PathBuilder.LocalAppdataPath, AppMetadata.Name));
         _logger.LogInfo(AppMetadata.Version);
@@ -162,6 +148,36 @@ public class Main : Game
         Player = new Player();
     }
 
+    void EnterRoom(LDtkLevel level)
+    {
+        Projectile.ClearProjectiles();
+
+        var layer = level.LayerInstances[1];
+        for(int i = 0; i < layer.EntityInstances.Length; i++)
+        {
+            var e = layer.EntityInstances[i];
+            if(e._Identifier == "JumpThrough")
+                _world.JumpThroughs.Add(new(e.Px, new(e.Width, MathHelper.Max(e.Height - 1, 1))));
+
+            if(e._Identifier.EndsWith("Slope"))
+            {
+                Point point1 = e.Px + new Point(layer._PxTotalOffsetX, layer._PxTotalOffsetY) + level.Position;
+                Point point2 = new Point(((JsonElement)e.FieldInstances[0]._Value)[0].GetProperty("cx").GetInt32() * World.TileSize, ((JsonElement)e.FieldInstances[0]._Value)[0].GetProperty("cy").GetInt32() * World.TileSize) + new Point(layer._PxTotalOffsetX, layer._PxTotalOffsetY) + level.Position;
+
+                if(e._Identifier == "JumpThrough_Slope")
+                    _world.JumpThroughSlopes.Add(new(point1, point2, 2));
+                if(e._Identifier == "Slope")
+                    _world.Slopes.Add(new(point1, point2, 2));
+            }
+        }
+
+        var layer2 = level.LayerInstances[4];
+        for(int i = 0; i < layer2.IntGridCsv.Length; i++)
+        {
+            if(layer2.IntGridCsv[i] == 1) _world.SetTile(1, new(i % layer2._CWid, i / layer2._CWid));
+        }
+    }
+
     protected override void Update(GameTime gameTime)
     {
         Input.RefreshKeyboardState();
@@ -170,7 +186,15 @@ public class Main : Game
 
         if(Input.GetPressed(Keys.F1))
         {
-            DebugMode = !DebugMode;
+            debugMode = !debugMode;
+        }
+
+        if(debugMode)
+        {
+            if(Input.GetPressed(Keys.F2))
+            {
+                drawTileCheckingAreas = !drawTileCheckingAreas;
+            }
         }
 
         if(Input.GetPressed(Buttons.Back, PlayerIndex.One) || Input.GetPressed(Keys.Escape))

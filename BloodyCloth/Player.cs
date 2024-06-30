@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework.Input;
 
 using BloodyCloth.Graphics;
 using BloodyCloth.Utils;
+using BloodyCloth.GameContent;
 
 namespace BloodyCloth;
 
@@ -182,7 +183,7 @@ public class Player : Entity
                     }
                 }
 
-                if(running && !CheckColliding((inputDir >= 0 ? RightEdge : LeftEdge).Shift(inputDir, 0)))
+                if(running)
                 {
                     frame += Math.Abs(velocity.X) / frameCounts[textureIndex] / 8;
                 }
@@ -211,7 +212,7 @@ public class Player : Entity
 
         if(testWeaponCooldown > 0) testWeaponCooldown = MathUtil.Approach(testWeaponCooldown, 0, 1);
 
-        if(Input.GetDown(MouseButtons.LeftButton) && testWeaponCooldown <= 0)
+        if(Input.GetDown(MouseButtons.LeftButton))
         {
             testWeaponCooldown = 30;
 
@@ -232,7 +233,7 @@ public class Player : Entity
             velocity.X = 0;
         });
         MoveY(velocity.Y, () => {
-            if(!(CheckCollidingJumpthrough(BottomEdge.Shift(new(0, 1))) && Input.GetDown(InputMapping.Down)))
+            if(!(Input.GetDown(InputMapping.Down) && CheckCollidingJumpthrough(BottomEdge.Shift(new(0, 1)))))
                 velocity.Y = 0;
         });
 
@@ -280,7 +281,7 @@ public class Player : Entity
             int width2 = texture2.Width / frameCounts[image.TextureIndex];
             Rectangle drawFrame2 = new(image.Frame * width2, 0, width2, texture2.Height);
 
-            if(Main.DebugMode)
+            if(Main.Debug.Enabled)
             {
                 NineSlice.DrawNineSlice(
                     Main.GetContent<Texture2D>("Images/Other/tileOutline"),
@@ -305,23 +306,23 @@ public class Player : Entity
             );
         }
 
-        if(Main.DebugMode)
+        if(Main.Debug.Enabled && Main.Debug.DrawTileCheckingAreas)
         {
-            // Rectangle newRect = new Rectangle
-            // {
-            //     X = Extensions.Floor(position.X * 0.125f),
-            //     Y = Extensions.Floor(position.Y * 0.125f)
-            // };
-            // newRect.Width = MathHelper.Max(1, Extensions.Ceiling(Width * 0.125f) + (Extensions.Floor((position.X + 4) * 0.125f) - newRect.X));
-            // newRect.Height = MathHelper.Max(1, Extensions.Ceiling(Height * 0.125f) + (Extensions.Floor((position.Y + 4) * 0.125f) - newRect.Y));
+            Rectangle newRect = new Rectangle
+            {
+                X = Extensions.Floor(position.X * 0.125f),
+                Y = Extensions.Floor(position.Y * 0.125f)
+            };
+            newRect.Width = MathHelper.Max(1, Extensions.Ceiling(Width * 0.125f) + (Extensions.Floor((position.X + 4) * 0.125f) - newRect.X));
+            newRect.Height = MathHelper.Max(1, Extensions.Ceiling(Height * 0.125f) + (Extensions.Floor((position.Y + 4) * 0.125f) - newRect.Y));
 
-            // for(int x = newRect.X; x < newRect.X + newRect.Width; x++)
-            // {
-            //     for(int y = newRect.Y; y < newRect.Y + newRect.Height; y++)
-            //     {
-            //         NineSlice.DrawNineSlice(Main.GetContent<Texture2D>("Images/Other/tileOutline"), new Rectangle(x, y, 1, 1).ScalePosition(8), null, new Point(1), new Point(1), Color.LimeGreen * 0.75f);
-            //     }
-            // }
+            for(int x = newRect.X; x < newRect.X + newRect.Width; x++)
+            {
+                for(int y = newRect.Y; y < newRect.Y + newRect.Height; y++)
+                {
+                    NineSlice.DrawNineSlice(Main.GetContent<Texture2D>("Images/Other/tileOutline"), new Rectangle(x, y, 1, 1).ScalePosition(8), null, new Point(1), new Point(1), Color.LimeGreen * 0.75f);
+                }
+            }
         }
 
         if(Visible)
@@ -343,7 +344,7 @@ public class Player : Entity
             );
         }
 
-        if(Main.DebugMode)
+        if(Main.Debug.Enabled)
         {
             NineSlice.DrawNineSlice(Main.GetContent<Texture2D>("Images/Other/tileOutline"), Hitbox, null, new Point(1), new Point(1), Color.Red * 0.5f);
         }
@@ -437,5 +438,14 @@ public class Player : Entity
 
 public class PlayerLoadout
 {
-    
+    private bool selectedSecondary = false;
+
+    public WeaponType PrimaryWeapon { get; set; } = WeaponType.Invalid;
+    public WeaponType SecondaryWeapon { get; set; } = WeaponType.Invalid;
+
+    public SpellType[] Spells { get; } = new SpellType[3];
+
+    public bool HasWeapon => PrimaryWeapon > WeaponType.Invalid || SecondaryWeapon > WeaponType.Invalid;
+
+    public bool HasSpell => Spells[0] > SpellType.Invalid || Spells[1] > SpellType.Invalid || Spells[2] > SpellType.Invalid;
 }

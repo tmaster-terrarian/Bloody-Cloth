@@ -125,13 +125,13 @@ public class World : IDisposable
                 int tile = _tiles[x, y];
                 if(tile == 0) continue;
 
-                if(Main.DebugMode) NineSlice.DrawNineSlice(Main.GetContent<Texture2D>("Images/Other/tileOutline"), _collisions[x, y], null, new Point(1), new Point(1), Color.Red * 0.5f);
+                if(Main.Debug.Enabled) NineSlice.DrawNineSlice(Main.GetContent<Texture2D>("Images/Other/tileOutline"), _collisions[x, y], null, new Point(1), new Point(1), Color.Red * 0.5f);
             }
         }
 
         if(!Visible) return;
 
-        if(Main.DebugMode)
+        if(Main.Debug.Enabled)
         {
             foreach(var rect in JumpThroughs)
             {

@@ -1,10 +1,11 @@
 using System;
 
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace BloodyCloth.GameContent;
 
-public abstract class ContentDef
+public enum SpellType
 {
-    public string Name { get; set; }
+    Invalid = -1,
 }

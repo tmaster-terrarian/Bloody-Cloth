@@ -4,7 +4,7 @@
 using System;
 using Microsoft.Xna.Framework;
 
-namespace BloodyCloth;
+namespace BloodyCloth.Graphics;
 
 public class Camera
 {

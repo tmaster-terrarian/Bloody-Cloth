@@ -7,7 +7,7 @@ using BloodyCloth.Graphics;
 
 namespace BloodyCloth.GameContent;
 
-public class ProjectileDef : ContentDef<ProjectileType>, ITexturedContentDef
+public class ProjectileDef : ContentDef, ITexturedContentDef
 {
     public string TexturePath { get; set; }
 

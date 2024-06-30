@@ -1,8 +1,9 @@
 using System;
 using System.Runtime.Serialization;
+
 using Microsoft.Xna.Framework;
 
-namespace BloodyCloth;
+namespace BloodyCloth.Experimental;
 
 [DataContract]
 public struct Fixed2 : IEquatable<Fixed2>
@@ -31,5 +32,15 @@ public struct Fixed2 : IEquatable<Fixed2>
     public readonly Point ToPoint()
     {
         return new((int)X, (int)Y);
+    }
+
+    public static bool operator ==(Fixed2 left, Fixed2 right)
+    {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(Fixed2 left, Fixed2 right)
+    {
+        return !(left == right);
     }
 }

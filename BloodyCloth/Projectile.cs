@@ -67,7 +67,6 @@ public class Projectile : Entity
         this.ID = _projectileID++;
         this.defId = ProjectileType.Invalid;
         this.CollidesWithJumpthroughs = false;
-        this.CollidesWithSolids = false;
     }
 
     private Projectile(ProjectileType id) : this()
@@ -136,9 +135,6 @@ public class Projectile : Entity
 
             if(projectile.markedForRemoval)
             {
-                if(projectile.HasValidType)
-                    Defs.ProjectileDefs[projectile.defId].OnDestroy(projectile);
-
                 projectiles[i] = null;
                 continue;
             }
@@ -169,7 +165,7 @@ public class Projectile : Entity
     public static void Draw()
     {
         Texture2D tex = null;
-        if(Main.DebugMode) tex = Main.GetContent<Texture2D>("Images/Other/tileOutline");
+        if(Main.Debug.Enabled) tex = Main.GetContent<Texture2D>("Images/Other/tileOutline");
 
         for(int i = 0; i < projectiles.Length; i++)
         {
@@ -177,23 +173,26 @@ public class Projectile : Entity
 
             if(projectile is null || projectile.markedForRemoval) continue;
 
-            if(Main.DebugMode)
+            if(Main.Debug.Enabled)
             {
-                // Rectangle newRect = new Rectangle
-                // {
-                //     X = Extensions.Floor(projectile.position.X * 0.125f),
-                //     Y = Extensions.Floor(projectile.position.Y * 0.125f)
-                // };
-                // newRect.Width = MathHelper.Max(1, Extensions.Ceiling(projectile.Width * 0.125f) + (Extensions.Floor((projectile.position.X + 4) * 0.125f) - newRect.X));
-                // newRect.Height = MathHelper.Max(1, Extensions.Ceiling(projectile.Height * 0.125f) + (Extensions.Floor((projectile.position.Y + 4) * 0.125f) - newRect.Y));
+                if(Main.Debug.DrawTileCheckingAreas)
+                {
+                    Rectangle newRect = new Rectangle
+                    {
+                        X = Extensions.Floor(projectile.position.X * 0.125f),
+                        Y = Extensions.Floor(projectile.position.Y * 0.125f)
+                    };
+                    newRect.Width = MathHelper.Max(1, Extensions.Ceiling(projectile.Width * 0.125f) + (Extensions.Floor((projectile.position.X + 4) * 0.125f) - newRect.X));
+                    newRect.Height = MathHelper.Max(1, Extensions.Ceiling(projectile.Height * 0.125f) + (Extensions.Floor((projectile.position.Y + 4) * 0.125f) - newRect.Y));
 
-                // for(int x = newRect.X; x < newRect.X + newRect.Width; x++)
-                // {
-                //     for(int y = newRect.Y; y < newRect.Y + newRect.Height; y++)
-                //     {
-                //         NineSlice.DrawNineSlice(Main.GetContent<Texture2D>("Images/Other/tileOutline"), new Rectangle(x, y, 1, 1).ScalePosition(8), null, new Point(1), new Point(1), Color.LimeGreen * 0.75f);
-                //     }
-                // }
+                    for(int x = newRect.X; x < newRect.X + newRect.Width; x++)
+                    {
+                        for(int y = newRect.Y; y < newRect.Y + newRect.Height; y++)
+                        {
+                            NineSlice.DrawNineSlice(Main.GetContent<Texture2D>("Images/Other/tileOutline"), new Rectangle(x, y, 1, 1).ScalePosition(8), null, new Point(1), new Point(1), Color.LimeGreen * 0.75f);
+                        }
+                    }
+                }
 
                 NineSlice.DrawNineSlice(tex, projectile.Hitbox, null, new Point(1), new Point(1), Color.LightBlue * 0.5f);
             }
@@ -208,6 +207,51 @@ public class Projectile : Entity
     public void Kill()
     {
         this.markedForRemoval = true;
+
+        if(this.HasValidType)
+            Defs.ProjectileDefs[this.defId].OnDestroy(this);
+    }
+
+    public static void ClearProjectiles()
+    {
+        for(int i = 0; i < projectiles.Length; i++)
+        {
+            projectiles[i] = null;
+        }
+    }
+
+    public static bool Exists(int index)
+    {
+        if(index < 0 || index >= projectiles.Length) return false;
+
+        if(projectiles[index] is null || projectiles[index].markedForRemoval) return false;
+
+        return true;
+    }
+
+    public static Projectile? GetProjectile(int index)
+    {
+        if(index < 0 || index >= projectiles.Length) throw new IndexOutOfRangeException(nameof(index));
+
+        if(projectiles[index] is null || projectiles[index].markedForRemoval) return null;
+
+        return projectiles[index];
+    }
+
+    public static bool Exists(uint id) => GetProjectile(id) is not null;
+
+    public static Projectile? GetProjectile(uint id)
+    {
+        if(id < 0) throw new IndexOutOfRangeException(nameof(id));
+
+        for(int i = 0; i < projectiles.Length; i++)
+        {
+            if(projectiles[i] is null || projectiles[i].markedForRemoval) continue;
+
+            if(projectiles[i].ID == id) return projectiles[i];
+        }
+
+        return null;
     }
 
     private void Move(Action? onCollideX = null, Action? onCollideY = null)
