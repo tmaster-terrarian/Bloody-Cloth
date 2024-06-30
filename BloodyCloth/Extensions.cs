@@ -78,4 +78,9 @@ public static class Extensions
     {
         return new(gridPoint.Cx * gridSize, gridPoint.Cy * gridSize);
     }
+
+    public static float ToRotation(this Vector2 value)
+    {
+        return (float)Math.Atan2(value.Y, value.X);
+    }
 }

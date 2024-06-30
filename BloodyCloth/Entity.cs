@@ -13,33 +13,36 @@ public abstract class Entity
 	int _layerDepth = 0;
 
 	protected Point position;
-	protected Vector2 velocity;
 	protected Vector2 drawScale = Vector2.One;
 
-    public float LayerDepth
+	public Vector2 velocity;
+
+	public float LayerDepth
 	{
 		get => 1 - ((float)(_layerDepth + 10000) / 20000);
 		set => _layerDepth = Extensions.Floor((1 - MathHelper.Clamp(value, 0, 1)) * 20000 - 10000);
 	}
 
-    public Color Color { get; set; } = Color.White;
+	public Color Color { get; set; } = Color.White;
 
 	public int Width { get; protected set; } = 8;
 	public int Height { get; protected set; } = 8;
 
+	public Vector2 DrawScale => drawScale;
+
 	public virtual bool Active { get; private set; } = true;
 
-    public virtual bool CollidesWithJumpthroughs { get; protected set; } = true;
+	public virtual bool NoCollide { get; set; }
+	public virtual bool CollidesWithSolids { get; set; } = true;
+	public virtual bool CollidesWithJumpthroughs { get; set; } = true;
 
-    public bool OnGround { get; protected set; }
+	public bool OnGround { get; protected set; }
 
-	public float Rotation { get; protected set; }
+	public float Rotation { get; set; }
 
-	public Vector2 Velocity => velocity;
+	public int Facing { get; set; } = 1;
 
-    public int Facing { get; set; } = 1;
-
-    public Point Center {
+	public Point Center {
 		get => new(position.X + (Width/2), position.Y + (Height/2));
 		set {
 			position = new(value.X - (Width/2), value.Y - (Height/2));
@@ -83,6 +86,14 @@ public abstract class Entity
 		}
 	}
 
+	public Rectangle RightEdge => new(Right.X - 1, Top.Y, 1, Height);
+
+	public Rectangle LeftEdge => new(Left.X, Top.Y, 1, Height);
+
+	public Rectangle TopEdge => new(Left.X, Top.Y, Width, 1);
+
+	public Rectangle BottomEdge => new(Left.X, Bottom.Y - 1, Width, 1);
+
 	public Point Left {
 		get => new(position.X, position.Y + (Height/2));
 		set {
@@ -111,38 +122,49 @@ public abstract class Entity
 		}
 	}
 
-    public bool CheckColliding(Rectangle rectangle, bool ignoreJumpThroughs = false)
-    {
-        if(Main.World.TileMeeting(rectangle) || Main.World.SolidMeeting(rectangle)) return true;
+	public bool CheckOnGround()
+	{
+		return CheckColliding(Hitbox.Shift(0, 1));
+	}
 
-        if(!ignoreJumpThroughs && CollidesWithJumpthroughs)
-        {
-            return CheckCollidingJumpthrough(rectangle);
-        }
+	public bool CheckColliding(Rectangle rectangle, bool ignoreJumpThroughs = false)
+	{
+		if(NoCollide) return false;
 
-        return false;
-    }
+		if(Main.World.TileMeeting(rectangle)) return true;
+		if(CollidesWithSolids && Main.World.SolidMeeting(rectangle)) return true;
 
-    public bool CheckCollidingJumpthrough(Rectangle rectangle)
-    {
-        // I bet you 100% that this is really laggy in large scale usage lmao
+		if(!ignoreJumpThroughs)
+		{
+			return CheckCollidingJumpthrough(rectangle);
+		}
 
-        Rectangle newRect = new(rectangle.Left, rectangle.Bottom - 1, rectangle.Width, 1);
+		return false;
+	}
 
-        Rectangle rect = Main.World.JumpThroughPlace(newRect) ?? Rectangle.Empty;
-        Rectangle rect2 = Main.World.JumpThroughPlace(newRect.Shift(0, -1)) ?? Rectangle.Empty;
+	public bool CheckCollidingJumpthrough(Rectangle rectangle)
+	{
+		if(NoCollide) return false;
+		if(!CollidesWithJumpthroughs) return false;
 
-        if(rect != Rectangle.Empty) return rect != rect2;
+		// I bet you 100% that this is really laggy in large scale usage lmao
 
-        Triangle tri = Main.World.JumpThroughSlopePlace(newRect) ?? Triangle.Empty;
-        Triangle tri2 = Main.World.JumpThroughSlopePlace(newRect.Shift(0, -1)) ?? Triangle.Empty;
+		Rectangle newRect = new(rectangle.Left, rectangle.Bottom - 1, rectangle.Width, 1);
 
-        if(tri != Triangle.Empty) return tri != tri2;
+		Rectangle rect = Main.World.JumpThroughPlace(newRect) ?? Rectangle.Empty;
+		Rectangle rect2 = Main.World.JumpThroughPlace(newRect.Shift(0, -1)) ?? Rectangle.Empty;
 
-        return false;
-    }
+		if(rect != Rectangle.Empty) return rect != rect2;
 
-    public float AngleTo(Vector2 target)
+		Line tri = Main.World.JumpThroughSlopePlace(newRect) ?? Line.Empty;
+		Line tri2 = Main.World.JumpThroughSlopePlace(newRect.Shift(0, -1)) ?? Line.Empty;
+
+		if(tri != Line.Empty) return tri != tri2;
+
+		return false;
+	}
+
+	public float AngleTo(Vector2 target)
 	{
 		return MathF.Atan2(target.Y - Center.Y, target.X - Center.X);
 	}
@@ -164,22 +186,38 @@ public abstract class Entity
 
 	public Vector2 DirectionTo(Vector2 target)
 	{
-		return Vector2.Normalize(target - Center.ToVector2());
+		Vector2 vector2 = Vector2.Normalize(target - Center.ToVector2());
+        if(float.IsNaN(vector2.X) || float.IsInfinity(vector2.X) || float.IsSubnormal(vector2.X)) velocity.X = 0;
+        if(float.IsNaN(vector2.Y) || float.IsInfinity(vector2.Y) || float.IsSubnormal(vector2.Y)) velocity.Y = 0;
+
+		return vector2;
 	}
 
 	public Vector2 DirectionTo(Point target)
 	{
-		return Vector2.Normalize(target.ToVector2() - Center.ToVector2());
+		Vector2 vector2 = Vector2.Normalize(target.ToVector2() - Center.ToVector2());
+        if(float.IsNaN(vector2.X) || float.IsInfinity(vector2.X) || float.IsSubnormal(vector2.X)) velocity.X = 0;
+        if(float.IsNaN(vector2.Y) || float.IsInfinity(vector2.Y) || float.IsSubnormal(vector2.Y)) velocity.Y = 0;
+
+		return vector2;
 	}
 
 	public Vector2 DirectionFrom(Vector2 target)
 	{
-		return Vector2.Normalize(Center.ToVector2() - target);
+		Vector2 vector2 = Vector2.Normalize(Center.ToVector2() - target);
+        if(float.IsNaN(vector2.X) || float.IsInfinity(vector2.X) || float.IsSubnormal(vector2.X)) velocity.X = 0;
+        if(float.IsNaN(vector2.Y) || float.IsInfinity(vector2.Y) || float.IsSubnormal(vector2.Y)) velocity.Y = 0;
+
+		return vector2;
 	}
 
 	public Vector2 DirectionFrom(Point target)
 	{
-		return Vector2.Normalize(Center.ToVector2() - target.ToVector2());
+		Vector2 vector2 = Vector2.Normalize(Center.ToVector2() - target.ToVector2());
+        if(float.IsNaN(vector2.X) || float.IsInfinity(vector2.X) || float.IsSubnormal(vector2.X)) velocity.X = 0;
+        if(float.IsNaN(vector2.Y) || float.IsInfinity(vector2.Y) || float.IsSubnormal(vector2.Y)) velocity.Y = 0;
+
+		return vector2;
 	}
 
 	public float DistanceSquaredTo(Vector2 target)

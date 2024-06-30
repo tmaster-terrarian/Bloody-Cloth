@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework.Graphics;
 using BloodyCloth.Ecs;
 using BloodyCloth.Ecs.Components;
 using BloodyCloth.Graphics;
+using BloodyCloth.Utils;
 
 namespace BloodyCloth;
 
@@ -25,6 +26,8 @@ public class World : IDisposable
     private readonly int height;
 
     public bool Visible { get; set; } = true;
+
+    public int NumCollisionChecks { get; set; }
 
     public EntityWorld Entities => _entityWorld;
 
@@ -64,9 +67,9 @@ public class World : IDisposable
         }
     }
 
-    public List<Rectangle> JumpThroughs { get; } = new();
-    public List<Triangle> JumpThroughSlopes { get; } = new();
-    public List<Triangle> Slopes { get; } = new();
+    public List<Rectangle> JumpThroughs { get; } = [];
+    public List<Line> JumpThroughSlopes { get; } = [];
+    public List<Line> Slopes { get; } = [];
 
     public int Width => width;
     public int Height => height;
@@ -135,49 +138,39 @@ public class World : IDisposable
                 SpriteBatch.Draw(Main.OnePixel, rect, Color.LimeGreen * 0.5f);
             }
 
-            foreach(var tri in JumpThroughSlopes)
+            foreach(var line in JumpThroughSlopes)
             {
-                SpriteBatch.Draw(Main.OnePixel, new Rectangle(tri.P1 - new Point(1), new(2)), Color.LimeGreen * 0.75f);
-                SpriteBatch.Draw(Main.OnePixel, new Rectangle(tri.P2 - new Point(1), new(2)), Color.LimeGreen * 0.75f);
-                SpriteBatch.Draw(Main.OnePixel, new Rectangle(tri.P3 - new Point(1), new(2)), Color.LimeGreen * 0.75f);
+                SpriteBatch.Draw(Main.OnePixel, new Rectangle(line.P1 - new Point(1), new(2)), Color.LimeGreen * 0.75f);
+                SpriteBatch.Draw(Main.OnePixel, new Rectangle(line.P2 - new Point(1), new(2)), Color.LimeGreen * 0.75f);
 
-                Point min = new(MathHelper.Min(MathHelper.Min(tri.P1.X, tri.P2.X), tri.P3.X), MathHelper.Min(MathHelper.Min(tri.P1.Y, tri.P2.Y), tri.P3.Y));
-                Point max = new(MathHelper.Max(MathHelper.Max(tri.P1.X, tri.P2.X), tri.P3.X), MathHelper.Max(MathHelper.Max(tri.P1.Y, tri.P2.Y), tri.P3.Y));
+                Point min = new(MathHelper.Min(line.P1.X, line.P2.X), MathHelper.Min(line.P1.Y, line.P2.Y));
+                Point max = new(MathHelper.Max(line.P1.X, line.P2.X), MathHelper.Max(line.P1.Y, line.P2.Y));
 
                 for(int x = 0; x < max.X - min.X; x++)
                 {
-                    for(int y = 0; y < max.Y - min.Y; y++)
-                    {
-                        var p = new Point(x, y) + min;
+                    float y = (float)(line.P2.Y - line.P1.Y) / (line.P2.X - line.P1.X) * x;
 
-                        if(tri.Contains(p))
-                        {
-                            SpriteBatch.Draw(Main.OnePixel, new Rectangle(p, new(1)), Color.LimeGreen * 0.5f);
-                        }
-                    }
+                    if(line.P2.Y < line.P1.Y) y--;
+
+                    SpriteBatch.Draw(Main.OnePixel, new Rectangle(new Point(x + line.P1.X, (int)y + line.P1.Y), new(1)), Color.LimeGreen * 0.5f);
                 }
             }
 
-            foreach(var tri in Slopes)
+            foreach(var line in Slopes)
             {
-                SpriteBatch.Draw(Main.OnePixel, new Rectangle(tri.P1 - new Point(1), new(2)), Color.Red * 0.75f);
-                SpriteBatch.Draw(Main.OnePixel, new Rectangle(tri.P2 - new Point(1), new(2)), Color.Red * 0.75f);
-                SpriteBatch.Draw(Main.OnePixel, new Rectangle(tri.P3 - new Point(1), new(2)), Color.Red * 0.75f);
+                SpriteBatch.Draw(Main.OnePixel, new Rectangle(line.P1 - new Point(1), new(2)), Color.Red * 0.75f);
+                SpriteBatch.Draw(Main.OnePixel, new Rectangle(line.P2 - new Point(1), new(2)), Color.Red * 0.75f);
 
-                Point min = new(MathHelper.Min(MathHelper.Min(tri.P1.X, tri.P2.X), tri.P3.X), MathHelper.Min(MathHelper.Min(tri.P1.Y, tri.P2.Y), tri.P3.Y));
-                Point max = new(MathHelper.Max(MathHelper.Max(tri.P1.X, tri.P2.X), tri.P3.X), MathHelper.Max(MathHelper.Max(tri.P1.Y, tri.P2.Y), tri.P3.Y));
+                Point min = new(MathHelper.Min(line.P1.X, line.P2.X), MathHelper.Min(line.P1.Y, line.P2.Y));
+                Point max = new(MathHelper.Max(line.P1.X, line.P2.X), MathHelper.Max(line.P1.Y, line.P2.Y));
 
                 for(int x = 0; x < max.X - min.X; x++)
                 {
-                    for(int y = 0; y < max.Y - min.Y; y++)
-                    {
-                        var p = new Point(x, y) + min;
+                    float y = (float)(line.P2.Y - line.P1.Y) / (line.P2.X - line.P1.X) * x;
 
-                        if(tri.Contains(p))
-                        {
-                            SpriteBatch.Draw(Main.OnePixel, new Rectangle(p, new(1)), Color.Red * 0.5f);
-                        }
-                    }
+                    if(line.P2.Y < line.P1.Y) y--;
+
+                    SpriteBatch.Draw(Main.OnePixel, new Rectangle(new Point(x + line.P1.X, (int)y + line.P1.Y), new(1)), Color.Red * 0.5f);
                 }
             }
 
@@ -222,7 +215,7 @@ public class World : IDisposable
 
     public List<Actor> GetAllActorComponents()
     {
-        List<Actor> actors = new();
+        List<Actor> actors = [];
         foreach(var actor in ActorSystem.Components)
         {
             if(!actor.IsEnabled) continue;
@@ -234,7 +227,7 @@ public class World : IDisposable
 
     public List<Ecs.Entity> GetAllEntitiesWithComponent<T>() where T : Component
     {
-        List<Ecs.Entity> entities = new();
+        List<Ecs.Entity> entities = [];
         foreach(var entity in _entityWorld.Entities)
         {
             if(!entity.IsEnabled) continue;
@@ -244,22 +237,45 @@ public class World : IDisposable
         return entities;
     }
 
-    public bool TileMeeting(Rectangle rect)
+    public bool TileMeeting(Rectangle rect, bool checkSlopes = true)
     {
         Rectangle[,] cols = Collisions;
-        for(int x = 0; x < Width; x++)
-        {
-            for(int y = 0; y < Height; y++)
-            {
-                var r = cols[x, y];
-                if(r == Rectangle.Empty) continue;
 
-                if(rect.Intersects(r)) return true;
+        // for(int x = 0; x < Width; x++)
+        // {
+        //     for(int y = 0; y < Height; y++)
+        //     {
+        //         var r = cols[x, y];
+        //         if(r == Rectangle.Empty) continue;
+
+        //         if(rect.Intersects(r)) return true;
+        //     }
+        // }
+
+        Rectangle newRect = rect;
+        newRect.X = Extensions.Floor(rect.X * 0.125f);
+        newRect.Y = Extensions.Floor(rect.Y * 0.125f);
+        newRect.Width = MathHelper.Max(1, Extensions.Ceiling(rect.Width * 0.125f) + (Extensions.Floor((rect.X + 4) * 0.125f) - newRect.X));
+        newRect.Height = MathHelper.Max(1, Extensions.Ceiling(rect.Height * 0.125f) + (Extensions.Floor((rect.Y + 4) * 0.125f) - newRect.Y));
+
+        for(int x = newRect.X; x < newRect.X + newRect.Width; x++)
+        {
+            for(int y = newRect.Y; y < newRect.Y + newRect.Height; y++)
+            {
+                if(!InWorld(x, y)) continue;
+                if(_tiles[x, y] == 0) continue;
+
+                NumCollisionChecks++;
+                if(rect.Intersects(cols[x, y])) return true;
             }
         }
-        foreach(var tri in Slopes)
+
+        if(checkSlopes)
         {
-            if(tri.Intersects(rect)) return true;
+            foreach(var line in Slopes)
+            {
+                if(line.Intersects(rect)) return true;
+            }
         }
         return false;
     }
@@ -268,21 +284,27 @@ public class World : IDisposable
     {
         foreach(var rect in JumpThroughs)
         {
+            if(bbox.Right <= rect.Left) continue;
+            if(bbox.Bottom <= rect.Top) continue;
+            if(bbox.Left >= rect.Right) continue;
+            if(bbox.Top >= rect.Bottom) continue;
+
+            NumCollisionChecks++;
             if(rect.Intersects(bbox)) return rect;
         }
         return null;
     }
 
-    public Triangle? JumpThroughSlopePlace(Rectangle bbox)
+    public Line? JumpThroughSlopePlace(Rectangle bbox)
     {
-        foreach(var tri in JumpThroughSlopes)
+        foreach(var line in JumpThroughSlopes)
         {
-            if(tri.Intersects(bbox)) return tri;
+            if(line.Intersects(bbox)) return line;
         }
         return null;
     }
 
-    public bool JumpThroughMeeting(Rectangle rect) => JumpThroughPlace(rect) is not null || JumpThroughSlopePlace(rect) is not null;
+    public bool JumpThroughMeeting(Rectangle rect, bool checkSlopes = true) => JumpThroughPlace(rect) is not null || (checkSlopes && JumpThroughSlopePlace(rect) is not null);
 
     public Solid? SolidPlace(Rectangle bbox)
     {
@@ -293,7 +315,18 @@ public class World : IDisposable
             Solid solid = entity.GetComponent<Solid>();
             if(solid is not null)
             {
-                if(solid.Collidable && solid.WorldBoundingBox.Intersects(new(bbox.Location, bbox.Size))) return solid;
+                if(!solid.IsEnabled) continue;
+                if(!solid.Collidable) continue;
+
+                if(Vector2.DistanceSquared(bbox.Center.ToVector2(), solid.WorldBoundingBox.Center.ToVector2()) > 1024) continue;
+
+                if(bbox.Right <= solid.WorldBoundingBox.Left) continue;
+                if(bbox.Bottom <= solid.WorldBoundingBox.Top) continue;
+                if(bbox.Left >= solid.WorldBoundingBox.Right) continue;
+                if(bbox.Top >= solid.WorldBoundingBox.Bottom) continue;
+
+                NumCollisionChecks++;
+                if(solid.WorldBoundingBox.Intersects(bbox)) return solid;
             }
         }
         return null;

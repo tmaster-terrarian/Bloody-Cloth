@@ -30,6 +30,11 @@ public static class Renderer
     public static SpriteFont SmallFont { get; private set; }
     public static SpriteFont SmallFontBold { get; private set; }
 
+    /// <summary>
+    /// Represents a missing (empty) <see cref="Texture2D"/>.
+    /// </summary>
+    public static Texture2D EmptyTexture { get; private set; }
+
     public static void Initialize(GraphicsDeviceManager graphics, GraphicsDevice graphicsDevice, GameWindow window)
     {
         _graphics = graphics;
@@ -37,6 +42,9 @@ public static class Renderer
         Window = window;
 
         _renderTarget = new RenderTarget2D(GraphicsDevice, _screenSize.X, _screenSize.Y);
+
+        EmptyTexture = new Texture2D(GraphicsDevice, 1, 1);
+        EmptyTexture.SetData((byte[])[0, 0, 0, 0]);
 
         Window.Position = new((GraphicsDevice.DisplayMode.Width - _graphics.PreferredBackBufferWidth) / 2, (GraphicsDevice.DisplayMode.Height - _graphics.PreferredBackBufferHeight) / 2);
 

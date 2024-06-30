@@ -22,6 +22,33 @@ public static class MathUtil
         return value;
     }
 
+    public static int Approach(int value, int target, int rate)
+    {
+        if(value < target)
+            return MathHelper.Min(value + rate, target);
+        else
+            return MathHelper.Max(value - rate, target);
+    }
+
+    public static int Approach(ref int value, int target, int rate)
+    {
+        if(value < target)
+            value = MathHelper.Min(value + rate, target);
+        else
+            value = MathHelper.Max(value - rate, target);
+        return value;
+    }
+
+    public static float Sqr(float value)
+    {
+        return value*value;
+    }
+
+    public static int Sqr(int value)
+    {
+        return value*value;
+    }
+
     public static float Snap(float value, float interval)
     {
         return System.MathF.Floor(value / interval) * interval;

@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Text.Json.Nodes;
 using System.Text.Json;
 using BloodyCloth.Graphics;
+using BloodyCloth.GameContent;
 
 namespace BloodyCloth;
 
@@ -51,6 +52,8 @@ public class Main : Game
 
     public static bool DebugMode { get; private set; }
 
+    public ulong ElapsedTime { get; private set; }
+
     public static class AppMetadata
     {
         public const string Name = "BloodyCloth";
@@ -80,12 +83,12 @@ public class Main : Game
     // for future me: it seems that in general, most things arent ready yet in the constructor, so just use Initialize <3
     protected override void Initialize()
     {
+        OnePixel = new Texture2D(GraphicsDevice, 1, 1);
+        OnePixel.SetData((byte[])[ 0xFF, 0xFF, 0xFF, 0xFF ]);
+
         Renderer.Initialize(_graphics, GraphicsDevice, Window);
 
         camera = new Camera();
-
-        OnePixel = new Texture2D(GraphicsDevice, 1, 1);
-        OnePixel.SetData(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF });
 
         _world = new World(120, 45);
 
@@ -130,12 +133,11 @@ public class Main : Game
                 {
                     Point point1 = e.Px + new Point(layer._PxTotalOffsetX, layer._PxTotalOffsetY) + level.Position;
                     Point point2 = new Point(((JsonElement)e.FieldInstances[0]._Value)[0].GetProperty("cx").GetInt32() * World.TileSize, ((JsonElement)e.FieldInstances[0]._Value)[0].GetProperty("cy").GetInt32() * World.TileSize) + new Point(layer._PxTotalOffsetX, layer._PxTotalOffsetY) + level.Position;
-                    Point point3 = new Point(((JsonElement)e.FieldInstances[0]._Value)[1].GetProperty("cx").GetInt32() * World.TileSize, ((JsonElement)e.FieldInstances[0]._Value)[1].GetProperty("cy").GetInt32() * World.TileSize) + new Point(layer._PxTotalOffsetX, layer._PxTotalOffsetY) + level.Position;
 
                     if(e._Identifier == "JumpThrough_Slope")
-                        _world.JumpThroughSlopes.Add(new(point1, point2, point3));
+                        _world.JumpThroughSlopes.Add(new(point1, point2, 2));
                     if(e._Identifier == "Slope")
-                        _world.Slopes.Add(new(point1, point2, point3));
+                        _world.Slopes.Add(new(point1, point2, 2));
                 }
             }
 
@@ -155,6 +157,8 @@ public class Main : Game
     {
         Renderer.LoadContent(Content);
 
+        Defs.Initialize();
+
         Player = new Player();
     }
 
@@ -172,9 +176,13 @@ public class Main : Game
         if(Input.GetPressed(Buttons.Back, PlayerIndex.One) || Input.GetPressed(Keys.Escape))
             Exit();
 
+        _world.NumCollisionChecks = 0;
+
         Player.Update();
 
         _world.Update();
+
+        Projectile.Update();
 
         camera.Zoom = 1;
         camera.Position += (Player.Center.ToVector2() + new Vector2(-ScreenSize.X / 2f, -ScreenSize.Y / 2f) - camera.Position) / 4f;
@@ -195,6 +203,10 @@ public class Main : Game
 
         _world.Draw();
 
+        Projectile.Draw();
+
+        Player.Draw();
+
         // Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFontItalic, "The quick brown fox jumps over the lazy dog.", new(11, 54), Color.White, 4, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
         // Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFontBold, "The quick brown fox jumps over the lazy dog.", new(10, 10), Color.White, 3, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
         // Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.SmallFontBold, "The quick brown fox jumps over the lazy dog.", new(10, 22), Color.White, 2, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
@@ -204,17 +216,19 @@ public class Main : Game
         // Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFontBoldItalic, "The quick brown fox jumps over the lazy dog.", new(11, 66), Color.White, 4, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
         // Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFontBoldItalic, "The quick brown fox jumps over the lazy dog.", new(12, 66), Color.White, 4, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
 
-        Player.Draw(Renderer.SpriteBatch);
+        Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFontBold, $"{ScreenSize.X}x{ScreenSize.Y}*{Renderer.PixelScale}", new Vector2(10, ScreenSize.Y - 10) + Vector2.Round(Camera.Position), Color.White, 4, 0, Vector2.UnitY * 14, 1, SpriteEffects.None, 0);
+        Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFont, $"{MousePosition.X}, {MousePosition.Y}", new Vector2(10, ScreenSize.Y - 20) + Vector2.Round(Camera.Position), Color.White, 4, 0, Vector2.UnitY * 14, 1, SpriteEffects.None, 0);
 
-        Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFontBold, $"{ScreenSize.X}x{ScreenSize.Y}*{Renderer.PixelScale}", new(10, ScreenSize.Y - 10), Color.White, 4, 0, Vector2.UnitY * 14, 1, SpriteEffects.None, 0);
-        Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFont, $"{MousePosition.X}, {MousePosition.Y}", new(10, ScreenSize.Y - 20), Color.White, 4, 0, Vector2.UnitY * 14, 1, SpriteEffects.None, 0);
+        Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFont, $"col checks: {_world.NumCollisionChecks}", new Vector2(128, ScreenSize.Y - 10) + Vector2.Round(Camera.Position), Color.White, 4, 0, Vector2.UnitY * 14, 1, SpriteEffects.None, 0);
 
         Renderer.EndDraw();
 
         base.Draw(gameTime);
+
+        ElapsedTime++;
     }
 
-    private static readonly List<string> missingAssets = new();
+    private static readonly List<string> missingAssets = [];
 
     public static T GetContent<T>(string assetName)
     {
@@ -234,13 +248,13 @@ public class Main : Game
 
     public static void DrawLine(Point start, Point end, Color color)
     {
-        VertexPositionColor[] verts = new VertexPositionColor[] {
+        VertexPositionColor[] verts = [
             new(new(start.ToVector2(), 0.2f), color),
             new(new(start.ToVector2() + Vector2.One * 2, 0.2f), color),
             new(new(end.ToVector2() + Vector2.One * 2, 0.2f), color),
             new(new(end.ToVector2(), 0.2f), color),
-        };
+        ];
 
-        _graphics.GraphicsDevice.DrawUserPrimitives(PrimitiveType.TriangleStrip, verts, 0, 1);
+        Renderer.GraphicsDevice.DrawUserPrimitives(PrimitiveType.TriangleStrip, verts, 0, 1);
     }
 }
