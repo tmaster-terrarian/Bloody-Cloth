@@ -5,37 +5,29 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
+using BloodyCloth.GameContent;
 using BloodyCloth.Graphics;
 using BloodyCloth.Utils;
-using BloodyCloth.GameContent;
 
 namespace BloodyCloth;
 
 public enum PlayerState
 {
+    IgnoreState,
+    StandIdle,
     Normal,
-    DoNothing,
     Dead
 }
 
-public class Player : Entity
+public class Player : MoveableEntity
 {
-    public class PlayerInputMapping
-    {
-        public Keys Right { get; set; } = Keys.D;
-        public Keys Left { get; set; } = Keys.A;
-        public Keys Down { get; set; } = Keys.S;
-        public Keys Up { get; set; } = Keys.W;
-        public Keys Jump { get; set; } = Keys.Space;
-    }
-
+    private PlayerState _state = PlayerState.Normal; // please do NOT touch this thx
+    private bool _stateJustChanged;
     private readonly List<Texture2D> textures = [];
     private readonly List<int> frameCounts = [];
     private int textureIndex;
     private float frame;
     private bool jumpCancelled = false;
-    private float xRemainder;
-    private float yRemainder;
     private bool useGravity = true;
     private bool running;
     private bool fxTrail;
@@ -49,11 +41,28 @@ public class Player : Entity
 
     public override bool Active => true;
 
-    public PlayerState State { get; private set; } = PlayerState.Normal;
+    public PlayerState State {
+        get => _state;
+        set {
+            if(value < 0 || value > PlayerState.Dead) throw new NullReferenceException(nameof(value));
 
-    public PlayerInputMapping InputMapping { get; } = new PlayerInputMapping {
+            if(_state != value)
+            {
+                _stateJustChanged = true;
+
+                OnStateExit(_state);
+                OnStateEnter(value);
+
+                _state = value;
+            }
+        }
+    }
+
+    private readonly PlayerInputMapping inputMapping = new PlayerInputMapping {
         // rebind here with Name = Keys
     };
+
+    public PlayerInputMapping InputMapping => inputMapping;
 
     public bool GamePad { get; set; }
 
@@ -75,15 +84,32 @@ public class Player : Entity
         AddTexture(Main.GetContent<Texture2D>(texPath + "run"), 2);
     }
 
-    void AddTexture(Texture2D texture, int frameCount = 1)
+    private void AddTexture(Texture2D texture, int frameCount = 1)
     {
         textures.Add(texture);
         frameCounts.Add(frameCount);
     }
 
+    private void OnStateEnter(PlayerState state)
+    {
+        switch(state)
+        {
+            case PlayerState.IgnoreState:
+                break;
+            case PlayerState.StandIdle:
+                break;
+            case PlayerState.Normal:
+                break;
+            case PlayerState.Dead:
+                break;
+            default:
+                break;
+        }
+    }
+
     public void Update()
     {
-        int inputDir = Input.GetDown(InputMapping.Right).ToInt32() - Input.GetDown(InputMapping.Left).ToInt32();
+        int inputDir = Input.GetDown(InputMapping.KeyRight).ToInt32() - Input.GetDown(InputMapping.KeyLeft).ToInt32();
 
         bool wasOnGround = OnGround;
         bool onJumpthrough = CheckCollidingJumpthrough(BottomEdge.Shift(0, 1));
@@ -103,13 +129,19 @@ public class Player : Entity
             fric = 0.05f;
         }
 
-        useGravity = false;
-        CollidesWithJumpthroughs = true;
-        CollidesWithSolids = true;
+        if(!_stateJustChanged)
+        {
+            useGravity = false;
+            CollidesWithJumpthroughs = true;
+            CollidesWithSolids = true;
+        }
+        else _stateJustChanged = false;
 
         switch(State)
         {
-            case PlayerState.DoNothing:
+            case PlayerState.IgnoreState:
+                break;
+            case PlayerState.StandIdle:
                 useGravity = true;
 
                 velocity.X = MathUtil.Approach(velocity.X, 0, fric * 2);
@@ -166,7 +198,7 @@ public class Player : Entity
 
                 if(!OnGround)
                 {
-                    if(Input.GetReleased(InputMapping.Jump) && velocity.Y < 0 && !jumpCancelled)
+                    if(Input.GetReleased(InputMapping.KeyJump) && velocity.Y < 0 && !jumpCancelled)
                     {
                         jumpCancelled = true;
                         velocity.Y /= 2;
@@ -174,7 +206,7 @@ public class Player : Entity
                 }
                 else
                 {
-                    if(onJumpthrough && Input.GetDown(InputMapping.Down) && !CheckColliding(BottomEdge.Shift(new(0, 2)), true))
+                    if(onJumpthrough && Input.GetDown(InputMapping.KeyDown) && !CheckColliding(BottomEdge.Shift(new(0, 2)), true))
                     {
                         position.Y += 2;
                         onJumpthrough = CheckCollidingJumpthrough(BottomEdge.Shift(0, 1));
@@ -192,7 +224,7 @@ public class Player : Entity
 
                 // ...
 
-                if(OnGround && Input.GetPressed(InputMapping.Jump))
+                if(OnGround && Input.GetPressed(InputMapping.KeyJump))
                 {
                     velocity.Y = jumpSpeed;
                 }
@@ -212,14 +244,14 @@ public class Player : Entity
 
         if(testWeaponCooldown > 0) testWeaponCooldown = MathUtil.Approach(testWeaponCooldown, 0, 1);
 
-        if(Input.GetDown(MouseButtons.LeftButton))
+        if(Input.GetDown(MouseButtons.LeftButton) && testWeaponCooldown == 0)
         {
-            testWeaponCooldown = 30;
+            testWeaponCooldown = 3;
 
             Vector2 vel = this.DirectionTo(Main.WorldMousePosition);
             if(Main.WorldMousePosition == Center) vel = Vector2.UnitX * Facing;
 
-            Projectile.Create(GameContent.ProjectileType.CrossbowBolt, Center - new Point(4), vel * 10);
+            Projectile.Create(ProjectileType.CrossbowBolt, Center - new Point(4), vel * 10);
         }
 
         if(Input.GetDown(Keys.LeftControl))
@@ -233,7 +265,7 @@ public class Player : Entity
             velocity.X = 0;
         });
         MoveY(velocity.Y, () => {
-            if(!(Input.GetDown(InputMapping.Down) && CheckCollidingJumpthrough(BottomEdge.Shift(new(0, 1)))))
+            if(!(Input.GetDown(InputMapping.KeyDown) && CheckCollidingJumpthrough(BottomEdge.Shift(new(0, 1)))))
                 velocity.Y = 0;
         });
 
@@ -269,6 +301,11 @@ public class Player : Entity
                 i--;
             }
         }
+    }
+
+    private void OnStateExit(PlayerState state)
+    {
+        
     }
 
     public void Draw()
@@ -347,69 +384,6 @@ public class Player : Entity
         if(Main.Debug.Enabled)
         {
             NineSlice.DrawNineSlice(Main.GetContent<Texture2D>("Images/Other/tileOutline"), Hitbox, null, new Point(1), new Point(1), Color.Red * 0.5f);
-        }
-    }
-
-    public void MoveX(float amount, Action? onCollide)
-    {
-        xRemainder += amount;
-        int move = Extensions.Round(xRemainder);
-        xRemainder -= move;
-
-        int sign = Math.Sign(move);
-        if(move != 0)
-        {
-            while(move != 0)
-            {
-                bool col1 = CheckColliding((sign >= 0 ? RightEdge : LeftEdge).Shift(new(sign, 0)));
-                if(col1 && !CheckColliding((sign >= 0 ? RightEdge : LeftEdge).Shift(new(sign, -1)), true))
-                {
-                    // slope up
-                    position.X += sign;
-                    position.Y -= 1;
-                    move -= sign;
-                }
-                else if(!col1)
-                {
-                    if(OnGround)
-                    {
-                        // slope down
-                        if(!CheckColliding(BottomEdge.Shift(new(sign, 1))) && CheckColliding(BottomEdge.Shift(new(sign, 2))))
-                            position.Y += 1;
-                    }
-                    position.X += sign;
-                    move -= sign;
-                }
-                else
-                {
-                    onCollide?.Invoke();
-                    break;
-                }
-            }
-        }
-    }
-
-    public void MoveY(float amount, Action? onCollide)
-    {
-        yRemainder += amount;
-        int move = Extensions.Round(yRemainder);
-        yRemainder -= move;
-
-        int sign = Math.Sign(move);
-        if(move != 0)
-        {
-            while(move != 0)
-            {
-                if(!CheckColliding((sign >= 0 ? BottomEdge : TopEdge).Shift(new(0, sign)), sign == -1))
-                {
-                    position.Y += sign;
-                    move -= sign;
-                    continue;
-                }
-
-                onCollide?.Invoke();
-                break;
-            }
         }
     }
 

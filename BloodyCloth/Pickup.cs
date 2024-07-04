@@ -1,10 +1,12 @@
 using System;
 
-namespace BloodyCloth.GameContent;
+using BloodyCloth.GameContent;
 
-public class Pickup : Entity
+namespace BloodyCloth;
+
+public class Pickup : MoveableEntity
 {
-    private static readonly Pickup[] pickups = new Pickup[200];
+    private static readonly Pickup[] pickups = new Pickup[100];
     private static uint _pickupID;
 
     private readonly WeaponType weaponDefId;
@@ -37,5 +39,33 @@ public class Pickup : Entity
     {
         if(type >= 0)
             this.spellDefId = type;
+    }
+
+    public static void Update()
+    {
+        for(int i = 0; i < pickups.Length; i++)
+        {
+            Pickup pickup = pickups[i];
+
+            if(pickup is null) continue;
+
+            pickup.OnGround = pickup.CheckOnGround();
+
+            pickup.MoveX(pickup.velocity.X,
+                () => {
+                    pickup.velocity.X = 0;
+                }
+            );
+            pickup.MoveY(pickup.velocity.Y,
+                () => {
+                    pickup.velocity.Y = 0;
+                }
+            );
+
+            if(pickup.markedForRemoval)
+            {
+                pickups[i] = null;
+            }
+        }
     }
 }

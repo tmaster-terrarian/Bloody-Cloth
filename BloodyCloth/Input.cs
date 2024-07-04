@@ -47,13 +47,6 @@ public static class Input
         return currentGamepadStates[(int)index];
     }
 
-    public static JoystickState GetJoystickState() => GetJoystickState(PlayerIndex.One);
-
-    public static JoystickState GetJoystickState(PlayerIndex index)
-    {
-        return Joystick.GetState((int)index);
-    }
-
     public static bool GetDown(Keys key)
     {
         return currentKeyboardState.IsKeyDown(key) && !Main.IsPaused;
@@ -133,4 +126,60 @@ public enum MouseButtons
     MiddleButton,
     XButton1,
     XButton2
+}
+
+public enum InputType
+{
+    Keyboard,
+    Mouse,
+    GamePad
+}
+
+public class PlayerInputMapping
+{
+    public Keys KeyRight { get; set; } = Keys.D;
+    public Keys KeyLeft { get; set; } = Keys.A;
+    public Keys KeyDown { get; set; } = Keys.S;
+    public Keys KeyUp { get; set; } = Keys.W;
+    public Keys KeyJump { get; set; } = Keys.Space;
+}
+
+public class MappedInput(int index, InputType type)
+{
+    public int ButtonIndex { get; set; } = index;
+
+    public InputType InputType { get; private set; } = type;
+
+    public bool GetDown()
+    {
+        return InputType switch
+        {
+            InputType.Keyboard => Input.GetDown((Keys)ButtonIndex),
+            InputType.Mouse => Input.GetDown((MouseButtons)ButtonIndex),
+            InputType.GamePad => Input.GetDown((Buttons)ButtonIndex),
+            _ => throw new System.Exception($"Invalid {nameof(BloodyCloth.InputType)}: {InputType}"),
+        };
+    }
+
+    public bool GetPressed()
+    {
+        return InputType switch
+        {
+            InputType.Keyboard => Input.GetPressed((Keys)ButtonIndex),
+            InputType.Mouse => Input.GetPressed((MouseButtons)ButtonIndex),
+            InputType.GamePad => Input.GetPressed((Buttons)ButtonIndex),
+            _ => throw new System.Exception($"Invalid {nameof(BloodyCloth.InputType)}: {InputType}"),
+        };
+    }
+
+    public bool GetReleased()
+    {
+        return InputType switch
+        {
+            InputType.Keyboard => Input.GetReleased((Keys)ButtonIndex),
+            InputType.Mouse => Input.GetReleased((MouseButtons)ButtonIndex),
+            InputType.GamePad => Input.GetReleased((Buttons)ButtonIndex),
+            _ => throw new System.Exception($"Invalid {nameof(BloodyCloth.InputType)}: {InputType}"),
+        };
+    }
 }

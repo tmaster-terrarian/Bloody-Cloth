@@ -201,10 +201,11 @@ public class Main : Game
             Exit();
 
         _world.NumCollisionChecks = 0;
+        _world.Update();
+
+        Pickup.Update();
 
         Player.Update();
-
-        _world.Update();
 
         Projectile.Update();
 

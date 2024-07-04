@@ -1,25 +1,21 @@
 using System;
-using System.Collections.Generic;
 
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 
 using BloodyCloth.GameContent;
-using Microsoft.Xna.Framework.Graphics;
-using BloodyCloth.Utils;
 using BloodyCloth.Graphics;
-using System.Collections;
+using BloodyCloth.Utils;
 
 namespace BloodyCloth;
 
-public class Projectile : Entity
+public class Projectile : MoveableEntity
 {
     private static readonly Projectile[] projectiles = new Projectile[200];
     private static uint _projectileID;
 
     private readonly ProjectileType defId;
     private bool markedForRemoval;
-    private float yRemainder;
-    private float xRemainder;
 
     public bool hurtsEnemy;
     public bool hurtsPlayer;
@@ -57,8 +53,6 @@ public class Projectile : Entity
     public Vector2 TextureVisualOffset { get; set; }
     public Vector2 FacingSpecificVisualOffset { get; set; }
     public int FlipY { get; set; } = 1;
-
-	public bool NudgeOnMove { get; set; } = true;
 
     public bool DestroyOnCollisionWithWorld { get; set; }
 
@@ -103,7 +97,7 @@ public class Projectile : Entity
         {
             Projectile proj = projectiles[i];
 
-            if(proj is null || !proj.Active)
+            if(proj is null || proj.markedForRemoval)
             {
                 projectiles[i] = projectile;
                 return i;
@@ -133,12 +127,6 @@ public class Projectile : Entity
 
             if(projectile is null) continue;
 
-            if(projectile.markedForRemoval)
-            {
-                projectiles[i] = null;
-                continue;
-            }
-
             projectile.OnGround = projectile.CheckOnGround();
 
             if(projectile.HasValidType)
@@ -149,16 +137,28 @@ public class Projectile : Entity
             if(projectile.TimeLeft == 0)
                 projectile.Kill();
 
-            projectile.MoveX(projectile.velocity.X,
-                () => {
-                    projectile.velocity.X = 0;
-                }
-            );
-            projectile.MoveY(projectile.velocity.Y,
-                () => {
-                    projectile.velocity.Y = 0;
-                }
-            );
+            if(projectile.shouldMove)
+            {
+                projectile.MoveX(projectile.velocity.X,
+                    () => {
+                        if(projectile.DestroyOnCollisionWithWorld) projectile.Kill();
+
+                        projectile.velocity.X = 0;
+                    }
+                );
+                projectile.MoveY(projectile.velocity.Y,
+                    () => {
+                        if(projectile.DestroyOnCollisionWithWorld) projectile.Kill();
+
+                        projectile.velocity.Y = 0;
+                    }
+                );
+            }
+
+            if(projectile.markedForRemoval)
+            {
+                projectiles[i] = null;
+            }
         }
     }
 
@@ -171,7 +171,7 @@ public class Projectile : Entity
         {
             Projectile projectile = projectiles[i];
 
-            if(projectile is null || projectile.markedForRemoval) continue;
+            if(projectile is null) continue;
 
             if(Main.Debug.Enabled)
             {
@@ -197,7 +197,7 @@ public class Projectile : Entity
                 NineSlice.DrawNineSlice(tex, projectile.Hitbox, null, new Point(1), new Point(1), Color.LightBlue * 0.5f);
             }
 
-            if(!projectile.Visible) continue;
+            if(!projectile.Visible || projectile.markedForRemoval) continue;
 
             if(projectile.HasValidType)
                 Defs.ProjectileDefs[projectile.defId].Draw(projectile);
@@ -252,83 +252,5 @@ public class Projectile : Entity
         }
 
         return null;
-    }
-
-    private void Move(Action? onCollideX = null, Action? onCollideY = null)
-    {
-        if(!this.shouldMove) return;
-
-        if(velocity.LengthSquared() < 0.000001f)
-            velocity = Vector2.Zero;
-
-        this.MoveX(velocity.X, onCollideX);
-        this.MoveY(velocity.Y, onCollideY);
-    }
-
-    public void MoveX(float amount, Action? onCollide)
-    {
-        if(amount == 0) return;
-
-        xRemainder += amount;
-        int move = Extensions.Round(xRemainder);
-        if(move != 0)
-        {
-            xRemainder -= move;
-            int sign = Math.Sign(move);
-            while(move != 0)
-            {
-                bool col1 = CheckColliding((sign >= 0 ? RightEdge : LeftEdge).Shift(new(sign, 0)));
-                if(col1 && !CheckColliding((sign >= 0 ? RightEdge : LeftEdge).Shift(new(sign, -1)), true) && NudgeOnMove)
-                {
-                    position.X += sign;
-                    position.Y -= 1;
-                    move = MathUtil.Approach(move, 0, Math.Abs(sign));
-                }
-                else if(!col1)
-                {
-                    if(OnGround && NudgeOnMove)
-                    {
-                        if(!CheckColliding(BottomEdge.Shift(new(sign, 1))) && CheckColliding(BottomEdge.Shift(new(sign, 2))))
-                            position.Y += 1;
-                    }
-                    position.X += sign;
-                    move = MathUtil.Approach(move, 0, Math.Abs(sign));
-                }
-                else
-                {
-                    if(DestroyOnCollisionWithWorld) Kill();
-
-                    onCollide?.Invoke();
-                    break;
-                }
-            }
-        }
-    }
-
-    public void MoveY(float amount, Action? onCollide)
-    {
-        if(amount == 0) return;
-
-        yRemainder += amount;
-        int move = Extensions.Round(yRemainder);
-        if(move != 0)
-        {
-            yRemainder -= move;
-            int sign = Math.Sign(move);
-            while(move != 0)
-            {
-                if(!CheckColliding((sign >= 0 ? BottomEdge : TopEdge).Shift(new(0, sign)), sign < 0))
-                {
-                    position.Y += sign;
-                    move = MathUtil.Approach(move, 0, Math.Abs(sign));
-                    continue;
-                }
-
-                if(DestroyOnCollisionWithWorld) Kill();
-
-                onCollide?.Invoke();
-                break;
-            }
-        }
     }
 }
