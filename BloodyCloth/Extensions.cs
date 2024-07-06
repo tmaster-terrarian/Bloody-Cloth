@@ -6,23 +6,6 @@ namespace BloodyCloth;
 
 public static class Extensions
 {
-    // public static void DrawStringBold(this SpriteBatch spriteBatch, SpriteFont font, string text, Vector2 position, Color color, int thickness, float rotation, Vector2 origin, Vector2 scale, SpriteEffects effects = SpriteEffects.None, float layerDepth = 0, bool rtl = false)
-    // {
-    //     int _th = MathHelper.Max(thickness, 0);
-    //     spriteBatch.DrawString(font, text, position + new Vector2(MathF.Cos(rotation), MathF.Sin(rotation)) * scale * _th, color, rotation, origin, scale, effects, layerDepth, rtl);
-    //     spriteBatch.DrawString(font, text, position, color, rotation, origin, scale, effects, layerDepth, rtl);
-    // }
-
-    // public static void DrawStringBold(this SpriteBatch spriteBatch, SpriteFont font, string text, Vector2 position, Color color, int thickness, float rotation, Vector2 origin, float scale, SpriteEffects effects = SpriteEffects.None, float layerDepth = 0, bool rtl = false)
-    // {
-    //     spriteBatch.DrawStringBold(font, text, position, color, thickness, rotation, origin, new Vector2(scale), effects, layerDepth, rtl);
-    // }
-
-    // public static void DrawStringBold(this SpriteBatch spriteBatch, SpriteFont font, string text, Vector2 position, Color color, int thickness = 2)
-    // {
-    //     spriteBatch.DrawStringBold(font, text, position, color, thickness, 0, Vector2.Zero, Vector2.One, SpriteEffects.None, 0);
-    // }
-
     public static void DrawStringSpacesFix(this SpriteBatch spriteBatch, SpriteFont font, string text, Vector2 position, Color color, int spaceSize, float rotation, Vector2 origin, Vector2 scale, SpriteEffects effects = SpriteEffects.None, float layerDepth = 0, bool rtl = false)
     {
         var split = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);

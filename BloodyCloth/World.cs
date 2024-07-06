@@ -20,7 +20,7 @@ public class World : IDisposable
 
     private readonly int[,] _tiles;
 
-    public const int TileSize = 8;
+    public const int TileSize = 16;
 
     private readonly int width;
     private readonly int height;
@@ -78,8 +78,8 @@ public class World : IDisposable
 
     public World(int width, int height)
     {
-        this.width = MathHelper.Max(width, 40);
-        this.height = MathHelper.Max(height, 23);
+        this.width = width;
+        this.height = height;
         _tiles = new int[this.width, this.width];
 
         _collisions = new Rectangle[this.width, this.width];
@@ -243,8 +243,8 @@ public class World : IDisposable
         Rectangle newRect = rect;
         newRect.X = Extensions.Floor(rect.X / (float)TileSize);
         newRect.Y = Extensions.Floor(rect.Y / (float)TileSize);
-        newRect.Width = MathHelper.Max(1, Extensions.Ceiling(rect.Width / (float)TileSize) + (Extensions.Floor((rect.X + (TileSize / 2f)) / TileSize) - newRect.X));
-        newRect.Height = MathHelper.Max(1, Extensions.Ceiling(rect.Height / (float)TileSize) + (Extensions.Floor((rect.Y + (TileSize / 2f)) / TileSize) - newRect.Y));
+        newRect.Width = MathHelper.Max(1, Extensions.Ceiling((rect.X + rect.Width) / (float)TileSize) - newRect.X);
+        newRect.Height = MathHelper.Max(1, Extensions.Ceiling((rect.Y + rect.Height) / (float)TileSize) - newRect.Y);
 
         for(int x = newRect.X; x < newRect.X + newRect.Width; x++)
         {

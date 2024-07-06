@@ -183,8 +183,8 @@ public class Projectile : MoveableEntity
                         X = Extensions.Floor(projectile.position.X / (float)World.TileSize),
                         Y = Extensions.Floor(projectile.position.Y / (float)World.TileSize)
                     };
-                    newRect.Width = MathHelper.Max(1, Extensions.Ceiling(projectile.Width / (float)World.TileSize) + (Extensions.Floor((projectile.position.X + (World.TileSize / 2f)) / World.TileSize) - newRect.X));
-                    newRect.Height = MathHelper.Max(1, Extensions.Ceiling(projectile.Height / (float)World.TileSize) + (Extensions.Floor((projectile.position.Y + (World.TileSize / 2f)) / World.TileSize) - newRect.Y));
+                    newRect.Width = MathHelper.Max(1, Extensions.Ceiling((projectile.position.X + projectile.Width) / (float)World.TileSize) - newRect.X);
+                    newRect.Height = MathHelper.Max(1, Extensions.Ceiling((projectile.position.Y + projectile.Height) / (float)World.TileSize) - newRect.Y);
 
                     for(int x = newRect.X; x < newRect.X + newRect.Width; x++)
                     {

@@ -48,6 +48,17 @@
 			"path": "Levels/*.png",
 			"recursive": "True",
 			"action": "copy"
+		},
+
+		"FX": {
+			"path": "FX/*.fx",
+			"recursive": "True",
+			"action": "build",
+			"importer": "EffectImporter",
+			"processor": "EffectProcessor",
+			"processorParam": {
+				"Debug": "Auto"
+			}
 		}
 	}
 }

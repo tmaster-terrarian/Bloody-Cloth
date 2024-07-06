@@ -11,8 +11,11 @@ public static class Defs
 
     static readonly Dictionary<ProjectileType, ProjectileDef> projectileDefs = [];
     static readonly Dictionary<WeaponType, WeaponDef> weaponDefs = [];
+    static readonly Dictionary<TriggerType, TriggerDef> triggerDefs = [];
 
     public static IReadOnlyDictionary<ProjectileType, ProjectileDef> ProjectileDefs => projectileDefs;
+    public static IReadOnlyDictionary<WeaponType, WeaponDef> WeaponDefs => weaponDefs;
+    public static IReadOnlyDictionary<TriggerType, TriggerDef> TriggerDefs => triggerDefs;
 
     public static void Initialize()
     {
@@ -20,6 +23,7 @@ public static class Defs
 
         CreateProjectiles();
         CreateWeapons();
+        CreateTriggers();
 
         isInitialized = true;
     }
@@ -39,6 +43,17 @@ public static class Defs
         weaponDefs.Add(WeaponType.Crossbow, new WeaponDef {
             Name = "Crossbow",
             IconTexturePath = "UI/Icons/Weapons/Crossbow",
+        });
+    }
+
+    static void CreateTriggers()
+    {
+        triggerDefs.Add(TriggerType.NextRoom, new TriggerDef {
+            Name = "NextRoom",
+            TriggerOnce = true,
+            OnEnter = (Trigger trigger) => {
+                Main.NextRoom();
+            }
         });
     }
 }

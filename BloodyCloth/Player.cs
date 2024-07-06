@@ -33,7 +33,7 @@ public class Player : MoveableEntity
     bool fxTrail;
     int fxTrailCounter;
     List<AfterImage> afterImages = [];
-    float moveSpeed = 2.5f;
+    float moveSpeed = 3f;
     float jumpSpeed = -4.5f;
     float gravity = 0.2f;
 
@@ -81,7 +81,7 @@ public class Player : MoveableEntity
 
         string texPath = "Images/Player/";
         AddTexture(Main.GetContent<Texture2D>(texPath + "idle"));
-        AddTexture(Main.GetContent<Texture2D>(texPath + "run"), 2);
+        AddTexture(Main.GetContent<Texture2D>(texPath + "run"), 6);
     }
 
     void AddTexture(Texture2D texture, int frameCount = 1)
@@ -221,7 +221,7 @@ public class Player : MoveableEntity
 
                 if(running)
                 {
-                    frame += Math.Abs(velocity.X) / frameCounts[textureIndex] / 8;
+                    frame += Math.Abs(velocity.X) / frameCounts[textureIndex] / 2.5f;
                 }
 
                 fxTrail = Math.Abs(velocity.X) > 1f * moveSpeed;
@@ -368,11 +368,11 @@ public class Player : MoveableEntity
             {
                 Rectangle newRect = new Rectangle
                 {
-                    X = Extensions.Floor(this.position.X / (float)World.TileSize),
-                    Y = Extensions.Floor(this.position.Y / (float)World.TileSize)
+                    X = this.position.X / World.TileSize,
+                    Y = this.position.Y / World.TileSize
                 };
-                newRect.Width = MathHelper.Max(1, Extensions.Ceiling(this.Width / (float)World.TileSize) + (Extensions.Floor((this.position.X + (World.TileSize / 2f)) / World.TileSize) - newRect.X));
-                newRect.Height = MathHelper.Max(1, Extensions.Ceiling(this.Height / (float)World.TileSize) + (Extensions.Floor((this.position.Y + (World.TileSize / 2f)) / World.TileSize) - newRect.Y));
+                newRect.Width = MathHelper.Max(1, Extensions.Ceiling((this.position.X + this.Width) / (float)World.TileSize) - newRect.X);
+                newRect.Height = MathHelper.Max(1, Extensions.Ceiling((this.position.Y + this.Height) / (float)World.TileSize) - newRect.Y);
 
                 for(int x = newRect.X; x < newRect.X + newRect.Width; x++)
                 {

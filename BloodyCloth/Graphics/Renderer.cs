@@ -6,12 +6,14 @@ namespace BloodyCloth.Graphics;
 
 public static class Renderer
 {
-    private static GraphicsDeviceManager _graphics;
-    private static SpriteBatch _spriteBatch;
-    private static RenderTarget2D _renderTarget;
+    static GraphicsDeviceManager _graphics;
+    static SpriteBatch _spriteBatch;
+    static RenderTarget2D _renderTarget;
 
-    private static int _pixelScale = 3;
-    private static Point _screenSize = new Point(640, 360);
+    static int _pixelScale = 3;
+    static Point _screenSize = new Point(640, 360);
+    
+    static Effect effect;
 
     public static GraphicsDevice GraphicsDevice { get; private set; }
     public static SpriteBatch SpriteBatch => _spriteBatch;
@@ -71,14 +73,16 @@ public static class Renderer
 
         SmallFont = content.Load<SpriteFont>("Fonts/small");
         SmallFontBold = content.Load<SpriteFont>("Fonts/smallBold");
+
+        effect = content.Load<Effect>("FX/NormalLit");
     }
 
-    public static void BeginDraw(SamplerState samplerState = null, Matrix? transformMatrix = null, SpriteSortMode sortMode = SpriteSortMode.Deferred)
+    public static void BeginDraw(SamplerState samplerState = null, Matrix? transformMatrix = null, SpriteSortMode sortMode = SpriteSortMode.Immediate)
     {
         GraphicsDevice.SetRenderTarget(_renderTarget);
         GraphicsDevice.Clear(Color.CornflowerBlue);
 
-        SpriteBatch.Begin(sortMode: sortMode, samplerState: samplerState, transformMatrix: transformMatrix);
+        SpriteBatch.Begin(sortMode: sortMode, samplerState: samplerState, transformMatrix: transformMatrix, effect: effect);
     }
 
     public static void EndDraw()

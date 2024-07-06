@@ -73,18 +73,18 @@ public struct Line : IEquatable<Line>
         Main.World.NumCollisionChecks++;
 
         // bottom
-        if(this.Intersects(new Line(rectangle.Left, rectangle.Bottom, rectangle.Right, rectangle.Bottom))) return true;
+        if(this.Intersects(new Line(rectangle.Left, rectangle.Bottom - 1, rectangle.Right - 1, rectangle.Bottom - 1))) return true;
 
         // top
-        if(this.Intersects(new Line(rectangle.Left, rectangle.Top, rectangle.Right, rectangle.Top))) return true;
+        if(this.Intersects(new Line(rectangle.Left, rectangle.Top, rectangle.Right - 1, rectangle.Top))) return true;
 
         // left
-        if(this.Intersects(new Line(rectangle.Left, rectangle.Top, rectangle.Left, rectangle.Bottom))) return true;
+        if(this.Intersects(new Line(rectangle.Left, rectangle.Top, rectangle.Left, rectangle.Bottom - 1))) return true;
 
         // right
-        if(this.Intersects(new Line(rectangle.Right, rectangle.Top, rectangle.Right, rectangle.Bottom))) return true;
+        if(this.Intersects(new Line(rectangle.Right - 1, rectangle.Top, rectangle.Right - 1, rectangle.Bottom - 1))) return true;
 
-        // my old solution: (does not work properly from below due to false positives)
+        // my old solution (does not work properly from below due to false positives)
 
         // int rx1;
         // int rx2;
