@@ -53,7 +53,7 @@ public class World : IDisposable
                 for(int y = 0; y < Height; y++)
                 {
                     var tile = _tiles[x, y];
-                    Rectangle rect = new Rectangle(-10000, -10000, 1, 1);
+                    Rectangle rect = Rectangle.Empty;
 
                     if(tile != 0)
                         rect = new Rectangle(x * TileSize, y * TileSize, TileSize, TileSize);
@@ -71,17 +71,21 @@ public class World : IDisposable
     public List<Line> JumpThroughSlopes { get; } = [];
     public List<Line> Slopes { get; } = [];
 
+    public List<Rectangle> SuccessfulCollisions { get; } = [];
+
     public int Width => width;
     public int Height => height;
 
     public World(int width, int height)
     {
-        this.width = MathHelper.Max(width, 80);
-        this.height = MathHelper.Max(height, 45);
+        this.width = MathHelper.Max(width, 40);
+        this.height = MathHelper.Max(height, 23);
         _tiles = new int[this.width, this.width];
 
         _collisions = new Rectangle[this.width, this.width];
     }
+
+    public World(Point size) : this(size.X, size.Y) {}
 
     public Rectangle ValidateArea(Rectangle rectangle)
     {
@@ -125,7 +129,10 @@ public class World : IDisposable
                 int tile = _tiles[x, y];
                 if(tile == 0) continue;
 
-                if(Main.Debug.Enabled) NineSlice.DrawNineSlice(Main.GetContent<Texture2D>("Images/Other/tileOutline"), _collisions[x, y], null, new Point(1), new Point(1), Color.Red * 0.5f);
+                if(Main.Debug.Enabled)
+                {
+                    NineSlice.DrawNineSlice(Main.GetContent<Texture2D>("Images/Other/tileOutline"), _collisions[x, y], null, new Point(1), new Point(1), Color.Red * 0.5f);
+                }
             }
         }
 
@@ -188,16 +195,6 @@ public class World : IDisposable
         ComponentSystems.Draw();
     }
 
-    public void DrawSprite(Texture2D texture, Vector2 position, Rectangle? sourceRectangle, Color color, float rotation, Vector2 origin, Vector2 scale, SpriteEffects effects = SpriteEffects.None, float layerDepth = 0)
-    {
-        SpriteBatch.Draw(texture, position, sourceRectangle, color, rotation, origin, scale, effects, layerDepth);
-    }
-
-    public void DrawSprite(Texture2D texture, Rectangle destinationRectangle, Rectangle? sourceRectangle, Color color, float rotation, Vector2 origin, SpriteEffects effects = SpriteEffects.None, float layerDepth = 0)
-    {
-        SpriteBatch.Draw(texture, destinationRectangle, sourceRectangle, color, rotation, origin, effects, layerDepth);
-    }
-
     public void DrawSprite(Sprite sprite, Transform transform)
     {
         SpriteBatch.Draw(sprite.texture, transform.position.ToVector2(), sprite.sourceRectangle, sprite.color, transform.rotation, sprite.origin.ToVector2(), transform.scale, sprite.spriteEffects, sprite.LayerDepth);
@@ -239,34 +236,29 @@ public class World : IDisposable
 
     public bool TileMeeting(Rectangle rect, bool checkSlopes = true)
     {
+        if(SuccessfulCollisions.Contains(checkSlopes ? rect.Shift(-100000 * TileSize, 0) : rect)) return true;
+
         Rectangle[,] cols = Collisions;
 
-        // for(int x = 0; x < Width; x++)
-        // {
-        //     for(int y = 0; y < Height; y++)
-        //     {
-        //         var r = cols[x, y];
-        //         if(r == Rectangle.Empty) continue;
-
-        //         if(rect.Intersects(r)) return true;
-        //     }
-        // }
-
         Rectangle newRect = rect;
-        newRect.X = Extensions.Floor(rect.X * 0.125f);
-        newRect.Y = Extensions.Floor(rect.Y * 0.125f);
-        newRect.Width = MathHelper.Max(1, Extensions.Ceiling(rect.Width * 0.125f) + (Extensions.Floor((rect.X + 4) * 0.125f) - newRect.X));
-        newRect.Height = MathHelper.Max(1, Extensions.Ceiling(rect.Height * 0.125f) + (Extensions.Floor((rect.Y + 4) * 0.125f) - newRect.Y));
+        newRect.X = Extensions.Floor(rect.X / (float)TileSize);
+        newRect.Y = Extensions.Floor(rect.Y / (float)TileSize);
+        newRect.Width = MathHelper.Max(1, Extensions.Ceiling(rect.Width / (float)TileSize) + (Extensions.Floor((rect.X + (TileSize / 2f)) / TileSize) - newRect.X));
+        newRect.Height = MathHelper.Max(1, Extensions.Ceiling(rect.Height / (float)TileSize) + (Extensions.Floor((rect.Y + (TileSize / 2f)) / TileSize) - newRect.Y));
 
         for(int x = newRect.X; x < newRect.X + newRect.Width; x++)
         {
             for(int y = newRect.Y; y < newRect.Y + newRect.Height; y++)
             {
                 if(!InWorld(x, y)) continue;
-                if(_tiles[x, y] == 0) continue;
+                if(_tiles[x, y] <= 0) continue;
 
                 NumCollisionChecks++;
-                if(rect.Intersects(cols[x, y])) return true;
+                if(rect.Intersects(cols[x, y]))
+                {
+                    SuccessfulCollisions.Add(rect);
+                    return true;
+                }
             }
         }
 
@@ -274,9 +266,14 @@ public class World : IDisposable
         {
             foreach(var line in Slopes)
             {
-                if(line.Intersects(rect)) return true;
+                if(line.Intersects(rect))
+                {
+                    SuccessfulCollisions.Add(rect.Shift(-100000 * TileSize, 0));
+                    return true;
+                }
             }
         }
+
         return false;
     }
 

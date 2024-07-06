@@ -1,0 +1,22 @@
+use file namespace whenever possible
+
+newline before curly bracket pairs (UNLESS in: object initialization, delegates, Actions when passed in as an argument, or empty pairs)
+
+no space after if/else/catch/while/for/etc
+  NO:  if (condition)
+  YES: if(condition)
+
+public goes after private in most cases
+
+order of class members (suggested but really idc):
+  const
+  static field
+  field
+  static property
+  property
+  class / enum / struct / interface
+  private constructor(s)
+  constructor(s)
+  methods
+
+

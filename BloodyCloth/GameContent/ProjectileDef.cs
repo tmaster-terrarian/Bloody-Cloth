@@ -7,13 +7,17 @@ using BloodyCloth.Graphics;
 
 namespace BloodyCloth.GameContent;
 
-public class ProjectileDef : ContentDef, ITexturedContentDef
+public class ProjectileDef : ContentDef, IDealsDamageContentDef
 {
     public string TexturePath { get; set; }
+
+    public int Damage { get; set; } = 1;
+    public bool CanHurtPlayer { get; set; }
 
     public virtual void OnCreate(Projectile projectile)
     {
         projectile.TexturePath = TexturePath;
+        projectile.Damage = Damage;
     }
 
     public virtual void Update(Projectile projectile) {}
@@ -32,7 +36,7 @@ public class ProjectileDef : ContentDef, ITexturedContentDef
             projectile.Pivot,
             projectile.DrawScale,
             (projectile.Facing < 0 ? SpriteEffects.FlipHorizontally : SpriteEffects.None) | (projectile.FlipY < 0 ? SpriteEffects.FlipVertically : SpriteEffects.None),
-            0
+            projectile.ConvertedLayerDepth
         );
     }
 

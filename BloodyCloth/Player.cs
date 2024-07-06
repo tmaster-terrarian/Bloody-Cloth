@@ -21,30 +21,32 @@ public enum PlayerState
 
 public class Player : MoveableEntity
 {
-    private PlayerState _state = PlayerState.Normal; // please do NOT touch this thx
-    private bool _stateJustChanged;
-    private readonly List<Texture2D> textures = [];
-    private readonly List<int> frameCounts = [];
-    private int textureIndex;
-    private float frame;
-    private bool jumpCancelled = false;
-    private bool useGravity = true;
-    private bool running;
-    private bool fxTrail;
-    private int fxTrailCounter;
-    private List<AfterImage> afterImages = [];
-    private float moveSpeed = 2.5f;
-    private float jumpSpeed = -4.5f;
-    private float gravity = 0.2f;
+    PlayerState _state = PlayerState.Normal; // please do NOT touch this thx
+    bool _stateJustChanged;
+    readonly List<Texture2D> textures = [];
+    readonly List<int> frameCounts = [];
+    int textureIndex;
+    float frame;
+    bool jumpCancelled = false;
+    bool useGravity = true;
+    bool running;
+    bool fxTrail;
+    int fxTrailCounter;
+    List<AfterImage> afterImages = [];
+    float moveSpeed = 2.5f;
+    float jumpSpeed = -4.5f;
+    float gravity = 0.2f;
 
-    public Point HitboxOffset => new(10, 10);
+    readonly PlayerInputMapping inputMapping = new PlayerInputMapping {
+        // rebind here with Name = Keys
+    };
 
-    public override bool Active => true;
+    public Point HitboxOffset => new(0, 5);
 
     public PlayerState State {
         get => _state;
         set {
-            if(value < 0 || value > PlayerState.Dead) throw new NullReferenceException(nameof(value));
+            if(value < 0 || value > PlayerState.Dead) value = PlayerState.IgnoreState;
 
             if(_state != value)
             {
@@ -57,10 +59,6 @@ public class Player : MoveableEntity
             }
         }
     }
-
-    private readonly PlayerInputMapping inputMapping = new PlayerInputMapping {
-        // rebind here with Name = Keys
-    };
 
     public PlayerInputMapping InputMapping => inputMapping;
 
@@ -79,18 +77,20 @@ public class Player : MoveableEntity
 
         Bottom = new(100, 104);
 
+        LayerDepth = 50;
+
         string texPath = "Images/Player/";
         AddTexture(Main.GetContent<Texture2D>(texPath + "idle"));
         AddTexture(Main.GetContent<Texture2D>(texPath + "run"), 2);
     }
 
-    private void AddTexture(Texture2D texture, int frameCount = 1)
+    void AddTexture(Texture2D texture, int frameCount = 1)
     {
         textures.Add(texture);
         frameCounts.Add(frameCount);
     }
 
-    private void OnStateEnter(PlayerState state)
+    void OnStateEnter(PlayerState state)
     {
         switch(state)
         {
@@ -135,18 +135,22 @@ public class Player : MoveableEntity
             CollidesWithJumpthroughs = true;
             CollidesWithSolids = true;
         }
-        else _stateJustChanged = false;
-
-        switch(State)
+        else
         {
-            case PlayerState.IgnoreState:
-                break;
+            _stateJustChanged = false;
+        }
+
+        switch (State)
+        {
             case PlayerState.StandIdle:
                 useGravity = true;
 
                 velocity.X = MathUtil.Approach(velocity.X, 0, fric * 2);
 
-                textureIndex = 0;
+                if(OnGround)
+                {
+                    textureIndex = 0;
+                }
 
                 break;
             case PlayerState.Normal:
@@ -230,6 +234,8 @@ public class Player : MoveableEntity
                 }
 
                 break;
+            case PlayerState.IgnoreState: default:
+                break;
         }
 
         if(!OnGround && useGravity)
@@ -251,7 +257,7 @@ public class Player : MoveableEntity
             Vector2 vel = this.DirectionTo(Main.WorldMousePosition);
             if(Main.WorldMousePosition == Center) vel = Vector2.UnitX * Facing;
 
-            Projectile.Create(ProjectileType.CrossbowBolt, Center - new Point(4), vel * 10);
+            Projectile.Create(ProjectileType.CrossbowBolt, Center - new Point(4), vel * 10, LayerDepth + 1);
         }
 
         if(Input.GetDown(Keys.LeftControl))
@@ -305,7 +311,17 @@ public class Player : MoveableEntity
 
     private void OnStateExit(PlayerState state)
     {
-        
+        switch(state)
+        {
+            case PlayerState.IgnoreState:
+                break;
+            case PlayerState.StandIdle:
+                break;
+            case PlayerState.Normal:
+                break;
+            case PlayerState.Dead:
+                break;
+        }
     }
 
     public void Draw()
@@ -314,9 +330,9 @@ public class Player : MoveableEntity
         {
             if(!Visible) continue;
 
-            var texture2 = textures[image.TextureIndex];
-            int width2 = texture2.Width / frameCounts[image.TextureIndex];
-            Rectangle drawFrame2 = new(image.Frame * width2, 0, width2, texture2.Height);
+            var texture = textures[image.TextureIndex];
+            int width = texture.Width / frameCounts[image.TextureIndex];
+            Rectangle drawFrame2 = new(image.Frame * width, 0, width, texture.Height);
 
             if(Main.Debug.Enabled)
             {
@@ -326,38 +342,54 @@ public class Player : MoveableEntity
                     null,
                     new Point(1),
                     new Point(1),
-                    Color.Blue * 0.75f
+                    Color.Blue * 0.75f,
+                    Vector2.Zero,
+                    SpriteEffects.None,
+                    ConvertDepth(LayerDepth + 1)
                 );
             }
 
             Renderer.SpriteBatch.Draw(
-                texture2,
-                (image.Position + new Point(this.Width / 2, this.Height / 2)).ToVector2() - new Vector2(0, HitboxOffset.Y / 2),
+                texture,
+                (image.Position + new Point(this.Width / 2, this.Height / 2)).ToVector2() - HitboxOffset.ToVector2(),
                 drawFrame2,
                 image.Color * (image.Alpha * 0.5f),
                 image.Rotation,
-                new Vector2(width2 / 2, texture2.Height / 2),
+                new Vector2(width / 2, texture.Height / 2),
                 image.Scale,
                 image.Facing < 0 ? SpriteEffects.FlipHorizontally : SpriteEffects.None,
-                0
+                ConvertDepth(LayerDepth + 2)
             );
         }
 
-        if(Main.Debug.Enabled && Main.Debug.DrawTileCheckingAreas)
+        if(Main.Debug.Enabled)
         {
-            Rectangle newRect = new Rectangle
+            if(Main.Debug.DrawTileCheckingAreas)
             {
-                X = Extensions.Floor(position.X * 0.125f),
-                Y = Extensions.Floor(position.Y * 0.125f)
-            };
-            newRect.Width = MathHelper.Max(1, Extensions.Ceiling(Width * 0.125f) + (Extensions.Floor((position.X + 4) * 0.125f) - newRect.X));
-            newRect.Height = MathHelper.Max(1, Extensions.Ceiling(Height * 0.125f) + (Extensions.Floor((position.Y + 4) * 0.125f) - newRect.Y));
-
-            for(int x = newRect.X; x < newRect.X + newRect.Width; x++)
-            {
-                for(int y = newRect.Y; y < newRect.Y + newRect.Height; y++)
+                Rectangle newRect = new Rectangle
                 {
-                    NineSlice.DrawNineSlice(Main.GetContent<Texture2D>("Images/Other/tileOutline"), new Rectangle(x, y, 1, 1).ScalePosition(8), null, new Point(1), new Point(1), Color.LimeGreen * 0.75f);
+                    X = Extensions.Floor(this.position.X / (float)World.TileSize),
+                    Y = Extensions.Floor(this.position.Y / (float)World.TileSize)
+                };
+                newRect.Width = MathHelper.Max(1, Extensions.Ceiling(this.Width / (float)World.TileSize) + (Extensions.Floor((this.position.X + (World.TileSize / 2f)) / World.TileSize) - newRect.X));
+                newRect.Height = MathHelper.Max(1, Extensions.Ceiling(this.Height / (float)World.TileSize) + (Extensions.Floor((this.position.Y + (World.TileSize / 2f)) / World.TileSize) - newRect.Y));
+
+                for(int x = newRect.X; x < newRect.X + newRect.Width; x++)
+                {
+                    for(int y = newRect.Y; y < newRect.Y + newRect.Height; y++)
+                    {
+                        NineSlice.DrawNineSlice(
+                            Main.GetContent<Texture2D>("Images/Other/tileOutline"),
+                            new Rectangle(x, y, 1, 1).ScalePosition(World.TileSize),
+                            null,
+                            new Point(1),
+                            new Point(1),
+                            Color.LimeGreen * 0.75f,
+                            Vector2.Zero,
+                            SpriteEffects.None,
+                            ConvertDepth(LayerDepth + 3)
+                        );
+                    }
                 }
             }
         }
@@ -370,14 +402,14 @@ public class Player : MoveableEntity
 
             Renderer.SpriteBatch.Draw(
                 texture,
-                Center.ToVector2() - new Vector2(0, HitboxOffset.Y / 2),
+                Center.ToVector2() - HitboxOffset.ToVector2(),
                 drawFrame,
                 Color,
                 Rotation,
                 new Vector2(width / 2, texture.Height / 2),
                 drawScale,
                 Facing < 0 ? SpriteEffects.FlipHorizontally : SpriteEffects.None,
-                0
+                ConvertedLayerDepth
             );
         }
 
@@ -412,14 +444,25 @@ public class Player : MoveableEntity
 
 public class PlayerLoadout
 {
-    private bool selectedSecondary = false;
+    private int _selectedWeapon;
 
-    public WeaponType PrimaryWeapon { get; set; } = WeaponType.Invalid;
-    public WeaponType SecondaryWeapon { get; set; } = WeaponType.Invalid;
-
+    public WeaponType[] Weapons { get; } = new WeaponType[2];
     public SpellType[] Spells { get; } = new SpellType[3];
+
+    public WeaponType PrimaryWeapon => Weapons[0];
+    public WeaponType SecondaryWeapon => Weapons[1];
 
     public bool HasWeapon => PrimaryWeapon > WeaponType.Invalid || SecondaryWeapon > WeaponType.Invalid;
 
     public bool HasSpell => Spells[0] > SpellType.Invalid || Spells[1] > SpellType.Invalid || Spells[2] > SpellType.Invalid;
+
+    public int SelectedWeaponSlot
+    {
+        get => _selectedWeapon;
+        set {
+            _selectedWeapon = value % Weapons.Length;
+        }
+    }
+
+    public WeaponType SelectedWeapon => Weapons[_selectedWeapon];
 }

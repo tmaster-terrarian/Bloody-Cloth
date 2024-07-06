@@ -73,12 +73,12 @@ public static class Renderer
         SmallFontBold = content.Load<SpriteFont>("Fonts/smallBold");
     }
 
-    public static void BeginDraw(SamplerState samplerState = null, Matrix? transformMatrix = null)
+    public static void BeginDraw(SamplerState samplerState = null, Matrix? transformMatrix = null, SpriteSortMode sortMode = SpriteSortMode.Deferred)
     {
         GraphicsDevice.SetRenderTarget(_renderTarget);
         GraphicsDevice.Clear(Color.CornflowerBlue);
 
-        SpriteBatch.Begin(samplerState: samplerState, transformMatrix: transformMatrix);
+        SpriteBatch.Begin(sortMode: sortMode, samplerState: samplerState, transformMatrix: transformMatrix);
     }
 
     public static void EndDraw()

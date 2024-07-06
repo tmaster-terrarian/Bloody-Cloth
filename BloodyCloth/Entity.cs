@@ -2,41 +2,42 @@ using System;
 
 using Microsoft.Xna.Framework;
 
-using BloodyCloth.Utils;
-
 namespace BloodyCloth;
 
 public abstract class Entity
 {
 	// alright lets not make it stupid complicated this time
 
-	int _layerDepth = 0;
+	int _depth = 0;
 
 	protected Point position;
 	protected Vector2 drawScale = Vector2.One;
 
 	public Vector2 velocity;
 
-	public float LayerDepth
+	/// <summary>
+	/// <para>Integer layer depth of the entity.</para>
+	/// <para>Use <see cref="ConvertedLayerDepth"/> for drawing.</para>
+	/// </summary>
+	public int LayerDepth
 	{
-		get => 1 - ((float)(_layerDepth + 10000) / 20000);
-		set => _layerDepth = Extensions.Floor((1 - MathHelper.Clamp(value, 0, 1)) * 20000 - 10000);
+		get => _depth;
+		set => _depth = MathHelper.Clamp(value, -100000, 100000);
 	}
 
-	public Color Color { get; set; } = Color.White;
+	/// <summary>
+	/// Layer depth of the entity, converted to work with drawing.
+	/// </summary>
+    public float ConvertedLayerDepth => 1 - ((_depth + 100000) * 5e-6f);
+
+    public Color Color { get; set; } = Color.White;
 
 	public int Width { get; protected set; } = 8;
 	public int Height { get; protected set; } = 8;
 
 	public Vector2 DrawScale => drawScale;
 
-	public virtual bool Active { get; private set; } = true;
-
-	public virtual bool NoCollide { get; set; }
-	public virtual bool CollidesWithSolids { get; set; } = true;
-	public virtual bool CollidesWithJumpthroughs { get; set; } = true;
-
-	public bool OnGround { get; protected set; }
+	public virtual bool Active { get; protected set; } = true;
 
 	public float Rotation { get; set; }
 
@@ -122,47 +123,12 @@ public abstract class Entity
 		}
 	}
 
-	public bool CheckOnGround()
-	{
-		return CheckColliding(Hitbox.Shift(0, 1));
-	}
-
-	public bool CheckColliding(Rectangle rectangle, bool ignoreJumpThroughs = false)
-	{
-		if(NoCollide) return false;
-
-		if(Main.World.TileMeeting(rectangle)) return true;
-		if(CollidesWithSolids && Main.World.SolidMeeting(rectangle)) return true;
-
-		if(!ignoreJumpThroughs)
-		{
-			return CheckCollidingJumpthrough(rectangle);
-		}
-
-		return false;
-	}
-
-	public bool CheckCollidingJumpthrough(Rectangle rectangle)
-	{
-		if(NoCollide) return false;
-		if(!CollidesWithJumpthroughs) return false;
-
-		// I bet you 100% that this is really laggy in large scale usage lmao
-
-		Rectangle newRect = new(rectangle.Left, rectangle.Bottom - 1, rectangle.Width, 1);
-
-		Rectangle rect = Main.World.JumpThroughPlace(newRect) ?? Rectangle.Empty;
-		Rectangle rect2 = Main.World.JumpThroughPlace(newRect.Shift(0, -1)) ?? Rectangle.Empty;
-
-		if(rect != Rectangle.Empty) return rect != rect2;
-
-		Line tri = Main.World.JumpThroughSlopePlace(newRect) ?? Line.Empty;
-		Line tri2 = Main.World.JumpThroughSlopePlace(newRect.Shift(0, -1)) ?? Line.Empty;
-
-		if(tri != Line.Empty) return tri != tri2;
-
-		return false;
-	}
+	/// <summary>
+	/// Converts an entity depth value to a value that works for drawing.
+	/// </summary>
+	/// <param name="depth"></param>
+	/// <returns></returns>
+	public static float ConvertDepth(int depth) => 1 - ((MathHelper.Clamp(depth, -100000, 100000) + 100000) * 5e-6f);
 
 	public float AngleTo(Vector2 target)
 	{
@@ -187,8 +153,8 @@ public abstract class Entity
 	public Vector2 DirectionTo(Vector2 target)
 	{
 		Vector2 vector2 = Vector2.Normalize(target - Center.ToVector2());
-        if(float.IsNaN(vector2.X) || float.IsInfinity(vector2.X) || float.IsSubnormal(vector2.X)) velocity.X = 0;
-        if(float.IsNaN(vector2.Y) || float.IsInfinity(vector2.Y) || float.IsSubnormal(vector2.Y)) velocity.Y = 0;
+        if(float.IsNaN(vector2.X) || float.IsInfinity(vector2.X) || float.IsSubnormal(vector2.X)) vector2.X = 0;
+        if(float.IsNaN(vector2.Y) || float.IsInfinity(vector2.Y) || float.IsSubnormal(vector2.Y)) vector2.Y = 0;
 
 		return vector2;
 	}
@@ -196,8 +162,8 @@ public abstract class Entity
 	public Vector2 DirectionTo(Point target)
 	{
 		Vector2 vector2 = Vector2.Normalize(target.ToVector2() - Center.ToVector2());
-        if(float.IsNaN(vector2.X) || float.IsInfinity(vector2.X) || float.IsSubnormal(vector2.X)) velocity.X = 0;
-        if(float.IsNaN(vector2.Y) || float.IsInfinity(vector2.Y) || float.IsSubnormal(vector2.Y)) velocity.Y = 0;
+        if(float.IsNaN(vector2.X) || float.IsInfinity(vector2.X) || float.IsSubnormal(vector2.X)) vector2.X = 0;
+        if(float.IsNaN(vector2.Y) || float.IsInfinity(vector2.Y) || float.IsSubnormal(vector2.Y)) vector2.Y = 0;
 
 		return vector2;
 	}
@@ -205,8 +171,8 @@ public abstract class Entity
 	public Vector2 DirectionFrom(Vector2 target)
 	{
 		Vector2 vector2 = Vector2.Normalize(Center.ToVector2() - target);
-        if(float.IsNaN(vector2.X) || float.IsInfinity(vector2.X) || float.IsSubnormal(vector2.X)) velocity.X = 0;
-        if(float.IsNaN(vector2.Y) || float.IsInfinity(vector2.Y) || float.IsSubnormal(vector2.Y)) velocity.Y = 0;
+        if(float.IsNaN(vector2.X) || float.IsInfinity(vector2.X) || float.IsSubnormal(vector2.X)) vector2.X = 0;
+        if(float.IsNaN(vector2.Y) || float.IsInfinity(vector2.Y) || float.IsSubnormal(vector2.Y)) vector2.Y = 0;
 
 		return vector2;
 	}
@@ -214,8 +180,8 @@ public abstract class Entity
 	public Vector2 DirectionFrom(Point target)
 	{
 		Vector2 vector2 = Vector2.Normalize(Center.ToVector2() - target.ToVector2());
-        if(float.IsNaN(vector2.X) || float.IsInfinity(vector2.X) || float.IsSubnormal(vector2.X)) velocity.X = 0;
-        if(float.IsNaN(vector2.Y) || float.IsInfinity(vector2.Y) || float.IsSubnormal(vector2.Y)) velocity.Y = 0;
+        if(float.IsNaN(vector2.X) || float.IsInfinity(vector2.X) || float.IsSubnormal(vector2.X)) vector2.X = 0;
+        if(float.IsNaN(vector2.Y) || float.IsInfinity(vector2.Y) || float.IsSubnormal(vector2.Y)) vector2.Y = 0;
 
 		return vector2;
 	}

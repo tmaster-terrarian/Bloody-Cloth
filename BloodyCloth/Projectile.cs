@@ -79,7 +79,7 @@ public class Projectile : MoveableEntity
     /// <exception cref="Exception">
     /// When given an invalid <see cref="ProjectileType"/>.
     /// </exception>
-    public static int Create(ProjectileType type, Point position, Vector2 velocity)
+    public static int Create(ProjectileType type, Point position, Vector2 velocity, int depth = 0)
     {
         if(type <= ProjectileType.Invalid)
         {
@@ -88,7 +88,8 @@ public class Projectile : MoveableEntity
 
         var projectile = new Projectile(type) {
             position = position,
-            velocity = velocity
+            velocity = velocity,
+            LayerDepth = depth
         };
 
         Defs.ProjectileDefs[type].OnCreate(projectile);
@@ -117,7 +118,7 @@ public class Projectile : MoveableEntity
     /// <exception cref="Exception">
     /// When given an invalid <see cref="ProjectileType"/>.
     /// </exception>
-    public static Projectile CreateDirect(ProjectileType type, Point position, Vector2 velocity) => projectiles[Create(type, position, velocity)];
+    public static Projectile CreateDirect(ProjectileType type, Point position, Vector2 velocity, int depth = 0) => projectiles[Create(type, position, velocity, depth)];
 
     public static void Update()
     {
@@ -179,22 +180,42 @@ public class Projectile : MoveableEntity
                 {
                     Rectangle newRect = new Rectangle
                     {
-                        X = Extensions.Floor(projectile.position.X * 0.125f),
-                        Y = Extensions.Floor(projectile.position.Y * 0.125f)
+                        X = Extensions.Floor(projectile.position.X / (float)World.TileSize),
+                        Y = Extensions.Floor(projectile.position.Y / (float)World.TileSize)
                     };
-                    newRect.Width = MathHelper.Max(1, Extensions.Ceiling(projectile.Width * 0.125f) + (Extensions.Floor((projectile.position.X + 4) * 0.125f) - newRect.X));
-                    newRect.Height = MathHelper.Max(1, Extensions.Ceiling(projectile.Height * 0.125f) + (Extensions.Floor((projectile.position.Y + 4) * 0.125f) - newRect.Y));
+                    newRect.Width = MathHelper.Max(1, Extensions.Ceiling(projectile.Width / (float)World.TileSize) + (Extensions.Floor((projectile.position.X + (World.TileSize / 2f)) / World.TileSize) - newRect.X));
+                    newRect.Height = MathHelper.Max(1, Extensions.Ceiling(projectile.Height / (float)World.TileSize) + (Extensions.Floor((projectile.position.Y + (World.TileSize / 2f)) / World.TileSize) - newRect.Y));
 
                     for(int x = newRect.X; x < newRect.X + newRect.Width; x++)
                     {
                         for(int y = newRect.Y; y < newRect.Y + newRect.Height; y++)
                         {
-                            NineSlice.DrawNineSlice(Main.GetContent<Texture2D>("Images/Other/tileOutline"), new Rectangle(x, y, 1, 1).ScalePosition(8), null, new Point(1), new Point(1), Color.LimeGreen * 0.75f);
+                            NineSlice.DrawNineSlice(
+                                Main.GetContent<Texture2D>("Images/Other/tileOutline"),
+                                new Rectangle(x, y, 1, 1).ScalePosition(World.TileSize),
+                                null,
+                                new Point(1),
+                                new Point(1),
+                                Color.LimeGreen * 0.75f,
+                                Vector2.Zero,
+                                SpriteEffects.None,
+                                ConvertDepth(projectile.LayerDepth + 1)
+                            );
                         }
                     }
                 }
 
-                NineSlice.DrawNineSlice(tex, projectile.Hitbox, null, new Point(1), new Point(1), Color.LightBlue * 0.5f);
+                NineSlice.DrawNineSlice(
+                    tex,
+                    projectile.Hitbox,
+                    null,
+                    new Point(1),
+                    new Point(1),
+                    Color.LightBlue * 0.5f,
+                    Vector2.Zero,
+                    SpriteEffects.None,
+                    ConvertDepth(projectile.LayerDepth + 1)
+                );
             }
 
             if(!projectile.Visible || projectile.markedForRemoval) continue;

@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Data.SqlTypes;
 
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -9,18 +7,19 @@ namespace BloodyCloth.GameContent;
 
 public static class Defs
 {
-    private static bool isInitialized;
+    static bool isInitialized;
 
-    private static readonly Dictionary<ProjectileType, ProjectileDef> projectileDefs = [];
+    static readonly Dictionary<ProjectileType, ProjectileDef> projectileDefs = [];
+    static readonly Dictionary<WeaponType, WeaponDef> weaponDefs = [];
 
     public static IReadOnlyDictionary<ProjectileType, ProjectileDef> ProjectileDefs => projectileDefs;
 
     public static void Initialize()
     {
-        if(isInitialized) throw new System.Exception("Content have already been initialized!");
+        if(isInitialized) throw new System.Exception("Game Content has already been initialized!");
 
         CreateProjectiles();
-        CreateWeaponItems();
+        CreateWeapons();
 
         isInitialized = true;
     }
@@ -35,8 +34,11 @@ public static class Defs
         });
     }
 
-    static void CreateWeaponItems()
+    static void CreateWeapons()
     {
-        
+        weaponDefs.Add(WeaponType.Crossbow, new WeaponDef {
+            Name = "Crossbow",
+            IconTexturePath = "UI/Icons/Weapons/Crossbow",
+        });
     }
 }

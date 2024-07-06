@@ -1,4 +1,5 @@
 using System;
+using BloodyCloth.Graphics;
 using BloodyCloth.Utils;
 using Microsoft.Xna.Framework;
 
@@ -63,7 +64,7 @@ namespace BloodyCloth.Ecs.Components
 
         public override void Draw()
         {
-            Main.World.DrawSprite(Main.OnePixel, WorldBoundingBox, null, Color.Red * 0.5f, 0, Vector2.Zero, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
+            Renderer.SpriteBatch.Draw(Main.OnePixel, WorldBoundingBox, null, Color.Red * 0.5f, 0, Vector2.Zero, Microsoft.Xna.Framework.Graphics.SpriteEffects.None, 0);
         }
 
         public void MoveX(float amount, Action? onCollide)

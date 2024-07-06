@@ -7,13 +7,11 @@ namespace BloodyCloth.GameContent.Projectiles;
 
 public class FastArrowProjectile : ProjectileDef
 {
-    public int Damage { get; set; } = 1;
     public float Gravity { get; set; } = 0.2f;
     public int GravityDelay { get; set; } = 30;
 
     public override void OnCreate(Projectile projectile)
     {
-        projectile.Damage = Damage;
         projectile.DestroyOnCollisionWithWorld = true;
         projectile.CollidesWithJumpthroughs = false;
         projectile.CollidesWithSolids = true;

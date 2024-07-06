@@ -16,33 +16,37 @@ using System.Text.Json.Nodes;
 using System.Text.Json;
 using BloodyCloth.Graphics;
 using BloodyCloth.GameContent;
+using Coroutines;
 
 namespace BloodyCloth;
 
 public class Main : Game
 {
-    internal const string ValidChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789*+=-–—<>_#&@%^~$.,!¡?¿:;`'\"‘’“”«»|/\\()[]{}ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜàáâãäåæçèéêëìíîïñòóôõöùúûüŸÿßẞŒœ‚„°©®™¢€£¥•…‹›";
+    public const string ValidChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789*+=-–—<>_#&@%^~$.,!¡?¿:;`'\"‘’“”«»|/\\()[]{}ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜàáâãäåæçèéêëìíîïñòóôõöùúûüŸÿßẞŒœ‚„°©®™¢€£¥•…‹›";
 
-    private static Main _instance = null;
-    private static GraphicsDeviceManager _graphics;
-    private static Logger _logger = new();
-    private static World _world;
-    private static Camera camera;
+    static Main _instance = null;
+    static GraphicsDeviceManager _graphics;
+    static Logger _logger = new();
+    static World _world;
+    static Camera _camera;
+    static CoroutineRunner _coroutineRunner = new();
 
-    private LDtkFile lDtkFile;
-    private LDtkWorld lDtkWorld;
-    private ExampleRenderer lDtkRenderer;
+    LDtkFile lDtkFile;
+    LDtkWorld lDtkWorld;
+    ExampleRenderer lDtkRenderer;
 
-    public static Logger Logger => _logger;
     public static Point ScreenSize => Renderer.ScreenSize;
+    public static Logger Logger => _logger;
     public static World World => _world;
-    public static bool IsPaused => !_instance.IsActive;
-    public static Camera Camera => camera;
+    public static Camera Camera => _camera;
+    public static CoroutineRunner Coroutines => _coroutineRunner;
 
     public static Point MousePosition => new(Mouse.GetState().X / Renderer.PixelScale, Mouse.GetState().Y / Renderer.PixelScale);
     public static Point MousePositionClamped => new(MathHelper.Clamp(Mouse.GetState().X / Renderer.PixelScale, 0, ScreenSize.X - 1), MathHelper.Clamp(Mouse.GetState().Y / Renderer.PixelScale, 0, ScreenSize.Y - 1));
 
-    public static Point WorldMousePosition => MousePosition + camera.Position.ToPoint();
+    public static Point WorldMousePosition => MousePosition + _camera.Position.ToPoint();
+
+    public static bool IsPaused => !_instance.IsActive;
 
     public static Texture2D OnePixel { get; private set; }
     public static Player Player { get; private set; }
@@ -61,8 +65,8 @@ public class Main : Game
         public const int Build = 5;
     }
 
-    private static bool debugMode;
-    private static bool drawTileCheckingAreas;
+    static bool debugMode;
+    static bool drawTileCheckingAreas;
 
     public static class Debug
     {
@@ -97,27 +101,7 @@ public class Main : Game
 
         Renderer.Initialize(_graphics, GraphicsDevice, Window);
 
-        camera = new Camera();
-
-        _world = new World(120, 45);
-
-        {
-            var silly = _world.Entities.Create();
-
-            silly.GetComponent<Transform>().position = new((int)(23.5f * World.TileSize), 14 * World.TileSize);
-
-            silly.AddComponent(new Sprite {
-                texture = Content.Load<Texture2D>("Images/Tiles/stone"),
-                sourceRectangle = new(Point.Zero, new(World.TileSize)),
-            });
-
-            var solid = silly.AddComponent(new Solid {
-                DefaultBehavior = true,
-            });
-            solid.BoundingBox = new Rectangle(Point.Zero, new (World.TileSize));
-
-            silly.AddComponent(new OscillatePosition());
-        }
+        _camera = new Camera();
 
         base.Initialize();
 
@@ -132,7 +116,7 @@ public class Main : Game
             lDtkRenderer.PrerenderLevel(level);
         }
 
-        EnterRoom(lDtkWorld.Levels[0]);
+        LoadLevel(lDtkWorld.Levels[0]);
 
         _logger.LogInfo(new PathBuilder{AppendFinalSeparator = true}.Create(PathBuilder.LocalAppdataPath, AppMetadata.Name));
         _logger.LogInfo(AppMetadata.Version);
@@ -148,9 +132,11 @@ public class Main : Game
         Player = new Player();
     }
 
-    void EnterRoom(LDtkLevel level)
+    void LoadLevel(LDtkLevel level)
     {
         Projectile.ClearProjectiles();
+
+        _world = new World(level.Size.Divide(World.TileSize));
 
         var layer = level.LayerInstances[1];
         for(int i = 0; i < layer.EntityInstances.Length; i++)
@@ -184,6 +170,8 @@ public class Main : Game
         Input.RefreshGamePadState(PlayerIndex.One);
         Input.RefreshMouseState();
 
+        _coroutineRunner.Update(1/60f);
+
         if(Input.GetPressed(Keys.F1))
         {
             debugMode = !debugMode;
@@ -209,17 +197,17 @@ public class Main : Game
 
         Projectile.Update();
 
-        camera.Zoom = 1;
-        camera.Position += (Player.Center.ToVector2() + new Vector2(-ScreenSize.X / 2f, -ScreenSize.Y / 2f) - camera.Position) / 4f;
-        camera.Position = Vector2.Clamp(camera.Position, Vector2.Zero, (World.Bounds.Size.ToVector2() * World.TileSize) - ScreenSize.ToVector2());
-        camera.Update();
+        _camera.Zoom = 1;
+        _camera.Position += (Player.Center.ToVector2() + new Vector2(-ScreenSize.X / 2f, -ScreenSize.Y / 2f) - _camera.Position) / 4f;
+        _camera.Position = Vector2.Clamp(_camera.Position, Vector2.Zero, (World.Bounds.Size.ToVector2() * World.TileSize) - ScreenSize.ToVector2());
+        _camera.Update();
 
         base.Update(gameTime);
     }
 
     protected override void Draw(GameTime gameTime)
     {
-        Renderer.BeginDraw(SamplerState.PointWrap, camera.Transform);
+        Renderer.BeginDraw(SamplerState.PointWrap, _camera.Transform, SpriteSortMode.Deferred);
 
         foreach(var level in lDtkWorld.Levels)
         {
@@ -241,10 +229,10 @@ public class Main : Game
         // Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFontBoldItalic, "The quick brown fox jumps over the lazy dog.", new(11, 66), Color.White, 4, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
         // Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFontBoldItalic, "The quick brown fox jumps over the lazy dog.", new(12, 66), Color.White, 4, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
 
-        Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFontBold, $"{ScreenSize.X}x{ScreenSize.Y}*{Renderer.PixelScale}", new Vector2(10, ScreenSize.Y - 10) + Vector2.Round(Camera.Position), Color.White, 4, 0, Vector2.UnitY * 14, 1, SpriteEffects.None, 0);
-        Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFont, $"{MousePosition.X}, {MousePosition.Y}", new Vector2(10, ScreenSize.Y - 20) + Vector2.Round(Camera.Position), Color.White, 4, 0, Vector2.UnitY * 14, 1, SpriteEffects.None, 0);
+        Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFontBold, $"{ScreenSize.X}x{ScreenSize.Y}*{Renderer.PixelScale}", new Vector2(10, ScreenSize.Y - 10) + Vector2.Round(Camera.Position), Color.White, 4, 0, Vector2.UnitY * 14, 1);
+        Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFont, $"{MousePosition.X}, {MousePosition.Y}", new Vector2(10, ScreenSize.Y - 20) + Vector2.Round(Camera.Position), Color.White, 4, 0, Vector2.UnitY * 14, 1);
 
-        Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFont, $"col checks: {_world.NumCollisionChecks}", new Vector2(128, ScreenSize.Y - 10) + Vector2.Round(Camera.Position), Color.White, 4, 0, Vector2.UnitY * 14, 1, SpriteEffects.None, 0);
+        Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFont, $"col checks: {_world.NumCollisionChecks}", new Vector2(128, ScreenSize.Y - 10) + Vector2.Round(Camera.Position), Color.White, 4, 0, Vector2.UnitY * 14, 1);
 
         Renderer.EndDraw();
 

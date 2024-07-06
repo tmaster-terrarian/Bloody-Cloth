@@ -68,4 +68,9 @@ public class Pickup : MoveableEntity
             }
         }
     }
+
+    public void Kill()
+    {
+        this.markedForRemoval = true;
+    }
 }
