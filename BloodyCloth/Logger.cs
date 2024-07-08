@@ -14,11 +14,11 @@ public class Logger
         this._name = name;
     }
 
-    public void LogInfo(object message) => _Log("INFO", message);
+    public void LogInfo(object message) => _Log("INFO", message ?? "null");
 
-    public void LogError(object message) => _Log("ERROR", message);
+    public void LogError(object message) => _Log("ERROR", message ?? "null");
 
-    public void LogWarning(object message) => _Log("WARN", message);
+    public void LogWarning(object message) => _Log("WARN", message ?? "null");
 
     private void _Log(string type, object message)
     {

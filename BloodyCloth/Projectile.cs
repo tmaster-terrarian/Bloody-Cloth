@@ -19,7 +19,6 @@ public class Projectile : MoveableEntity
 
     public bool hurtsEnemy;
     public bool hurtsPlayer;
-    public bool shouldMove = true;
     public float[] genericFloatValues = new float[4];
     public int[] genericIntValues = new int[4];
     public int frameNumber = 1;
@@ -27,16 +26,11 @@ public class Projectile : MoveableEntity
 
     public uint ID { get; private set; }
 
-    public int TimeLeft { get; set; } = 180;
-
-    /// <summary>
-    /// This will cause insane lag if not used carefully!
-    /// </summary>
-    public bool MoveExact { get; set; }
-
     public ProjectileType DefID => defId;
 
     public bool HasValidType => DefID >= 0;
+
+    public int TimeLeft { get; set; } = 180;
 
     public bool Visible { get; set; } = true;
     public int Alpha { get; set; } = 1;
@@ -54,6 +48,7 @@ public class Projectile : MoveableEntity
     public Vector2 FacingSpecificVisualOffset { get; set; }
     public int FlipY { get; set; } = 1;
 
+    public bool ShouldMove { get; set; } = true;
     public bool DestroyOnCollisionWithWorld { get; set; }
 
     private Projectile()
@@ -75,15 +70,14 @@ public class Projectile : MoveableEntity
     /// <param name="type"></param>
     /// <param name="position"></param>
     /// <param name="velocity"></param>
-    /// <returns>The ID of the new <see cref="Projectile"/>.</returns>
-    /// <exception cref="Exception">
-    /// When given an invalid <see cref="ProjectileType"/>.
+    /// <returns>The index of the new <see cref="Projectile"/>, or <c>-1</c> if there are too many.</returns>
+    /// <exception cref="ArgumentException">
     /// </exception>
     public static int Create(ProjectileType type, Point position, Vector2 velocity, int depth = 0)
     {
         if(type <= ProjectileType.Invalid)
         {
-            throw new Exception($"Cannot create projectile with invalid {nameof(ProjectileType)} \"{type}\"");
+            throw new ArgumentException($"{nameof(type)}: Invalid {nameof(EnemyType)} \"{type}\"");
         }
 
         var projectile = new Projectile(type) {
@@ -92,8 +86,6 @@ public class Projectile : MoveableEntity
             LayerDepth = depth
         };
 
-        Defs.ProjectileDefs[type].OnCreate(projectile);
-
         for(int i = 0; i < projectiles.Length; i++)
         {
             Projectile proj = projectiles[i];
@@ -101,6 +93,8 @@ public class Projectile : MoveableEntity
             if(proj is null || proj.markedForRemoval)
             {
                 projectiles[i] = projectile;
+                Defs.ProjectileDefs[type].OnCreate(projectile);
+
                 return i;
             }
         }
@@ -114,11 +108,16 @@ public class Projectile : MoveableEntity
     /// <param name="type"></param>
     /// <param name="position"></param>
     /// <param name="velocity"></param>
-    /// <returns>The new <see cref="Projectile"/>.</returns>
-    /// <exception cref="Exception">
-    /// When given an invalid <see cref="ProjectileType"/>.
+    /// <returns>The new <see cref="Projectile"/>, or <see langword="null"/> if there are too many..</returns>
+    /// <exception cref="ArgumentException">
     /// </exception>
-    public static Projectile CreateDirect(ProjectileType type, Point position, Vector2 velocity, int depth = 0) => projectiles[Create(type, position, velocity, depth)];
+    public static Projectile? CreateDirect(ProjectileType type, Point position, Vector2 velocity, int depth = 0)
+    {
+        int index = Create(type, position, velocity, depth);
+        if(index < 0) return null;
+
+        return projectiles[index];
+    }
 
     public static void Update()
     {
@@ -138,7 +137,7 @@ public class Projectile : MoveableEntity
             if(projectile.TimeLeft == 0)
                 projectile.Kill();
 
-            if(projectile.shouldMove)
+            if(projectile.ShouldMove)
             {
                 projectile.MoveX(projectile.velocity.X,
                     () => {
@@ -176,15 +175,15 @@ public class Projectile : MoveableEntity
 
             if(Main.Debug.Enabled)
             {
-                if(Main.Debug.DrawTileCheckingAreas)
+                if(Main.Debug.DrawTileCheckingAreas && projectile.ShouldMove)
                 {
                     Rectangle newRect = new Rectangle
                     {
-                        X = Extensions.Floor(projectile.position.X / (float)World.TileSize),
-                        Y = Extensions.Floor(projectile.position.Y / (float)World.TileSize)
+                        X = Extensions.FloorToInt(projectile.position.X / (float)World.TileSize),
+                        Y = Extensions.FloorToInt(projectile.position.Y / (float)World.TileSize)
                     };
-                    newRect.Width = MathHelper.Max(1, Extensions.Ceiling((projectile.position.X + projectile.Width) / (float)World.TileSize) - newRect.X);
-                    newRect.Height = MathHelper.Max(1, Extensions.Ceiling((projectile.position.Y + projectile.Height) / (float)World.TileSize) - newRect.Y);
+                    newRect.Width = MathHelper.Max(1, Extensions.CeilToInt((projectile.position.X + projectile.Width) / (float)World.TileSize) - newRect.X);
+                    newRect.Height = MathHelper.Max(1, Extensions.CeilToInt((projectile.position.Y + projectile.Height) / (float)World.TileSize) - newRect.Y);
 
                     for(int x = newRect.X; x < newRect.X + newRect.Width; x++)
                     {
@@ -218,7 +217,7 @@ public class Projectile : MoveableEntity
                 );
             }
 
-            if(!projectile.Visible || projectile.markedForRemoval) continue;
+            if(!projectile.Visible) continue;
 
             if(projectile.HasValidType)
                 Defs.ProjectileDefs[projectile.defId].Draw(projectile);

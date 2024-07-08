@@ -7,7 +7,7 @@ namespace BloodyCloth.Graphics;
 public static class Renderer
 {
     static GraphicsDeviceManager _graphics;
-    static SpriteBatch _spriteBatch;
+    static CustomSpriteBatch _spriteBatch;
     static RenderTarget2D _renderTarget;
 
     static int _pixelScale = 3;
@@ -16,7 +16,7 @@ public static class Renderer
     static Effect effect;
 
     public static GraphicsDevice GraphicsDevice { get; private set; }
-    public static SpriteBatch SpriteBatch => _spriteBatch;
+    public static CustomSpriteBatch SpriteBatch => _spriteBatch;
     public static RenderTarget2D RenderTarget => _renderTarget;
 
     public static GameWindow Window { get; private set; }
@@ -61,7 +61,7 @@ public static class Renderer
 
     public static void LoadContent(ContentManager content)
     {
-        _spriteBatch = new SpriteBatch(GraphicsDevice);
+        _spriteBatch = new CustomSpriteBatch(GraphicsDevice);
 
         RegularFont = content.Load<SpriteFont>("Fonts/default");
         RegularFontBold = content.Load<SpriteFont>("Fonts/defaultBold");
@@ -77,23 +77,17 @@ public static class Renderer
         effect = content.Load<Effect>("FX/NormalLit");
     }
 
-    public static void BeginDraw(SamplerState samplerState = null, Matrix? transformMatrix = null, SpriteSortMode sortMode = SpriteSortMode.Immediate)
+    public static void BeginDraw(SamplerState samplerState = null, Matrix? transformMatrix = null, SpriteSortMode sortMode = SpriteSortMode.Deferred)
     {
         GraphicsDevice.SetRenderTarget(_renderTarget);
         GraphicsDevice.Clear(Color.CornflowerBlue);
 
-        SpriteBatch.Begin(sortMode: sortMode, samplerState: samplerState, transformMatrix: transformMatrix, effect: effect);
+        SpriteBatch.Base.Begin(sortMode: sortMode, samplerState: samplerState, transformMatrix: transformMatrix);
+        SpriteBatch.TransformMatrix = transformMatrix;
     }
 
     public static void EndDraw()
     {
-        SpriteBatch.End();
-
-        GraphicsDevice.SetRenderTarget(null);
-        GraphicsDevice.Clear(Color.Black);
-
-        SpriteBatch.Begin(samplerState: SamplerState.PointWrap);
-        SpriteBatch.Draw(_renderTarget, Vector2.Zero, null, Color.White, 0, Vector2.Zero, _pixelScale, SpriteEffects.None, 0);
-        SpriteBatch.End();
+        SpriteBatch.Finalize(_renderTarget);
     }
 }

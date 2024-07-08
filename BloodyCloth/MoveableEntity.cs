@@ -62,7 +62,7 @@ public abstract class MoveableEntity : Entity
     public virtual void MoveX(float amount, Action? onCollide)
     {
         xRemainder += amount;
-        int move = Extensions.Round(xRemainder);
+        int move = Extensions.RoundToInt(xRemainder);
         xRemainder -= move;
 
         if(move != 0)
@@ -101,7 +101,7 @@ public abstract class MoveableEntity : Entity
     public virtual void MoveY(float amount, Action? onCollide)
     {
         yRemainder += amount;
-        int move = Extensions.Round(yRemainder);
+        int move = Extensions.RoundToInt(yRemainder);
         yRemainder -= move;
 
         if(move != 0)

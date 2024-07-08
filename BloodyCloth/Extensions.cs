@@ -27,17 +27,17 @@ public static class Extensions
         spriteBatch.DrawStringSpacesFix(font, text, position, color, spaceSize, 0, Vector2.Zero, Vector2.One, SpriteEffects.None, 0);
     }
 
-    public static int Round(float value)
+    public static int RoundToInt(float value)
     {
         return (int)Math.Round(value);
     }
 
-    public static int Ceiling(float value)
+    public static int CeilToInt(float value)
     {
         return (int)Math.Ceiling(value);
     }
 
-    public static int Floor(float value)
+    public static int FloorToInt(float value)
     {
         return (int)Math.Floor(value);
     }

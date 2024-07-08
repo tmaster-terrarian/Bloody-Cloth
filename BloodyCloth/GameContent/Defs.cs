@@ -9,13 +9,10 @@ public static class Defs
 {
     static bool isInitialized;
 
-    static readonly Dictionary<ProjectileType, ProjectileDef> projectileDefs = [];
-    static readonly Dictionary<WeaponType, WeaponDef> weaponDefs = [];
-    static readonly Dictionary<TriggerType, TriggerDef> triggerDefs = [];
-
-    public static IReadOnlyDictionary<ProjectileType, ProjectileDef> ProjectileDefs => projectileDefs;
-    public static IReadOnlyDictionary<WeaponType, WeaponDef> WeaponDefs => weaponDefs;
-    public static IReadOnlyDictionary<TriggerType, TriggerDef> TriggerDefs => triggerDefs;
+    public static Dictionary<ProjectileType, ProjectileDef> ProjectileDefs { get; } = [];
+    public static Dictionary<WeaponType, WeaponDef> WeaponDefs { get; } = [];
+    public static Dictionary<TriggerType, TriggerDef> TriggerDefs { get; } = [];
+    public static Dictionary<EnemyType, EnemyDef> EnemyDefs { get; } = [];
 
     public static void Initialize()
     {
@@ -24,36 +21,48 @@ public static class Defs
         CreateProjectiles();
         CreateWeapons();
         CreateTriggers();
+        CreateEnemies();
 
         isInitialized = true;
     }
 
-    static void CreateProjectiles()
+    private static void CreateProjectiles()
     {
-        projectileDefs.Add(ProjectileType.CrossbowBolt, new Projectiles.FastArrowProjectile {
-            Name = "Crossbow Bolt",
+        ProjectileDefs.Add(ProjectileType.CrossbowBolt, new Projectiles.FastArrow {
+            Name = "CrossbowBolt",
             Damage = 1,
             TexturePath = "Projectiles/CrossbowBolt",
             GravityDelay = 10,
+            Gravity = 0.15f,
         });
     }
 
-    static void CreateWeapons()
+    private static void CreateWeapons()
     {
-        weaponDefs.Add(WeaponType.Crossbow, new WeaponDef {
+        WeaponDefs.Add(WeaponType.Crossbow, new WeaponDef {
             Name = "Crossbow",
             IconTexturePath = "UI/Icons/Weapons/Crossbow",
         });
     }
 
-    static void CreateTriggers()
+    private static void CreateTriggers()
     {
-        triggerDefs.Add(TriggerType.NextRoom, new TriggerDef {
+        TriggerDefs.Add(TriggerType.NextRoom, new TriggerDef {
             Name = "NextRoom",
             TriggerOnce = true,
             OnEnter = (Trigger trigger) => {
                 Main.NextRoom();
-            }
+            },
+        });
+    }
+
+    private static void CreateEnemies()
+    {
+        EnemyDefs.Add(EnemyType.Dummy, new Enemies.Braindead {
+            Name = "Dummy",
+            TexturePath = "Enemies/dummy/idle",
+            Invincible = true,
+            MaxHP = 1000000,
         });
     }
 }

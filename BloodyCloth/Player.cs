@@ -23,25 +23,36 @@ public class Player : MoveableEntity
 {
     PlayerState _state = PlayerState.Normal; // please do NOT touch this thx
     bool _stateJustChanged;
-    readonly List<Texture2D> textures = [];
-    readonly List<int> frameCounts = [];
-    int textureIndex;
-    float frame;
-    bool jumpCancelled = false;
+    float stateTimer;
+
+    readonly float gravity = 0.2f;
+    readonly float baseMoveSpeed = 3f;
+    readonly float baseJumpSpeed = -4.5f;
+    readonly float baseGroundAcceleration = 0.15f;
+    readonly float baseGroundFriction = 0.1f;
+    readonly float baseAirAcceleration = 0.07f;
+    readonly float baseAirFriction = 0.05f;
+
+    float moveSpeed;
+    float jumpSpeed;
+    float accel;
+    float fric;
+
     bool useGravity = true;
+    bool jumpCancelled;
     bool running;
+
+    Point hitboxOffset = new(0, 5);
+
     bool fxTrail;
     int fxTrailCounter;
-    List<AfterImage> afterImages = [];
-    float moveSpeed = 3f;
-    float jumpSpeed = -4.5f;
-    float gravity = 0.2f;
+    readonly List<AfterImage> afterImages = [];
+
+    int bonusHp = 0;
 
     readonly PlayerInputMapping inputMapping = new PlayerInputMapping {
-        // rebind here with Name = Keys
+        // rebind here with Name = MappedInput
     };
-
-    public Point HitboxOffset => new(0, 5);
 
     public PlayerState State {
         get => _state;
@@ -51,6 +62,7 @@ public class Player : MoveableEntity
             if(_state != value)
             {
                 _stateJustChanged = true;
+                stateTimer = 0;
 
                 OnStateExit(_state);
                 OnStateEnter(value);
@@ -70,6 +82,17 @@ public class Player : MoveableEntity
 
     int testWeaponCooldown = 0;
 
+    readonly List<Texture2D> textures = [];
+    readonly List<int> frameCounts = [];
+    int textureIndex;
+    float frame;
+
+    enum TextureIndex
+    {
+        Idle,
+        Running
+    }
+
     public Player()
     {
         Width = 12;
@@ -80,8 +103,10 @@ public class Player : MoveableEntity
         LayerDepth = 50;
 
         string texPath = "Images/Player/";
-        AddTexture(Main.GetContent<Texture2D>(texPath + "idle"));
-        AddTexture(Main.GetContent<Texture2D>(texPath + "run"), 6);
+        void addTex(string path, int count = 1) => AddTexture(Main.GetContent<Texture2D>(texPath + path), count);
+
+        addTex("idle");
+        addTex("run", 6);
     }
 
     void AddTexture(Texture2D texture, int frameCount = 1)
@@ -97,6 +122,15 @@ public class Player : MoveableEntity
             case PlayerState.IgnoreState:
                 break;
             case PlayerState.StandIdle:
+                if(OnGround)
+                {
+                    textureIndex = (int)TextureIndex.Idle;
+                    frame = 0;
+                }
+                else
+                {
+                    textureIndex = (int)TextureIndex.Idle; // jump texture, replace later pls
+                }
                 break;
             case PlayerState.Normal:
                 break;
@@ -109,7 +143,7 @@ public class Player : MoveableEntity
 
     public void Update()
     {
-        int inputDir = Input.GetDown(InputMapping.KeyRight).ToInt32() - Input.GetDown(InputMapping.KeyLeft).ToInt32();
+        int inputDir = InputMapping.Right.IsDown.ToInt32() - InputMapping.Left.IsDown.ToInt32();
 
         bool wasOnGround = OnGround;
         bool onJumpthrough = CheckCollidingJumpthrough(BottomEdge.Shift(0, 1));
@@ -121,13 +155,7 @@ public class Player : MoveableEntity
             jumpCancelled = false;
         }
 
-        float accel = 0.15f;
-        float fric = 0.1f;
-        if(!OnGround)
-        {
-            accel = 0.07f;
-            fric = 0.05f;
-        }
+        RecalculateStats();
 
         if(!_stateJustChanged)
         {
@@ -149,18 +177,12 @@ public class Player : MoveableEntity
 
                 if(OnGround)
                 {
-                    textureIndex = 0;
+                    textureIndex = (int)TextureIndex.Idle;
                 }
 
                 break;
             case PlayerState.Normal:
                 useGravity = true;
-
-                if(!OnGround)
-                {
-                    accel = 0.07f;
-                    fric = 0.05f;
-                }
 
                 if(inputDir != 0)
                 {
@@ -172,7 +194,7 @@ public class Player : MoveableEntity
 
                         if(velocity.Y >= 0)
                         {
-                            textureIndex = 1;
+                            textureIndex = (int)TextureIndex.Running;
                         }
                     }
 
@@ -184,6 +206,7 @@ public class Player : MoveableEntity
                     {
                         velocity.X = MathUtil.Approach(velocity.X, inputDir * moveSpeed, accel);
                     }
+
                     if(inputDir * velocity.X > moveSpeed && OnGround)
                     {
                         velocity.X = MathUtil.Approach(velocity.X, inputDir * moveSpeed, fric/2);
@@ -194,15 +217,15 @@ public class Player : MoveableEntity
                     running = false;
                     velocity.X = MathUtil.Approach(velocity.X, 0, fric * 2);
 
-                    if(Math.Abs(velocity.X) < 1.5f && OnGround)
+                    if(OnGround && Math.Abs(velocity.X) < 1.5f)
                     {
-                        textureIndex = 0;
+                        textureIndex = (int)TextureIndex.Idle;
                     }
                 }
 
                 if(!OnGround)
                 {
-                    if(Input.GetReleased(InputMapping.KeyJump) && velocity.Y < 0 && !jumpCancelled)
+                    if(InputMapping.Down.Released && velocity.Y < 0 && !jumpCancelled)
                     {
                         jumpCancelled = true;
                         velocity.Y /= 2;
@@ -210,9 +233,10 @@ public class Player : MoveableEntity
                 }
                 else
                 {
-                    if(onJumpthrough && Input.GetDown(InputMapping.KeyDown) && !CheckColliding(BottomEdge.Shift(new(0, 2)), true))
+                    if(onJumpthrough && InputMapping.Down.IsDown && !CheckColliding(BottomEdge.Shift(new(0, 2)), true))
                     {
                         position.Y += 2;
+
                         onJumpthrough = CheckCollidingJumpthrough(BottomEdge.Shift(0, 1));
                         if(onJumpthrough) OnGround = true;
                         else OnGround = CheckColliding(BottomEdge.Shift(0, 1));
@@ -228,7 +252,7 @@ public class Player : MoveableEntity
 
                 // ...
 
-                if(OnGround && Input.GetPressed(InputMapping.KeyJump))
+                if(OnGround && InputMapping.Jump.Pressed)
                 {
                     velocity.Y = jumpSpeed;
                 }
@@ -271,7 +295,7 @@ public class Player : MoveableEntity
             velocity.X = 0;
         });
         MoveY(velocity.Y, () => {
-            if(!(Input.GetDown(InputMapping.KeyDown) && CheckCollidingJumpthrough(BottomEdge.Shift(new(0, 1)))))
+            if(!(InputMapping.Down.IsDown && CheckCollidingJumpthrough(BottomEdge.Shift(new(0, 1)))))
                 velocity.Y = 0;
         });
 
@@ -306,6 +330,20 @@ public class Player : MoveableEntity
                 afterImages.RemoveAt(i);
                 i--;
             }
+        }
+    }
+
+    private void RecalculateStats()
+    {
+        moveSpeed = baseMoveSpeed;
+        jumpSpeed = baseJumpSpeed;
+
+        accel = baseGroundAcceleration;
+        fric = baseGroundFriction;
+        if(!OnGround)
+        {
+            accel = baseAirAcceleration;
+            fric = baseAirFriction;
         }
     }
 
@@ -351,7 +389,7 @@ public class Player : MoveableEntity
 
             Renderer.SpriteBatch.Draw(
                 texture,
-                (image.Position + new Point(this.Width / 2, this.Height / 2)).ToVector2() - HitboxOffset.ToVector2(),
+                (image.Position + new Point(this.Width / 2, this.Height / 2)).ToVector2() - hitboxOffset.ToVector2(),
                 drawFrame2,
                 image.Color * (image.Alpha * 0.5f),
                 image.Rotation,
@@ -371,8 +409,8 @@ public class Player : MoveableEntity
                     X = this.position.X / World.TileSize,
                     Y = this.position.Y / World.TileSize
                 };
-                newRect.Width = MathHelper.Max(1, Extensions.Ceiling((this.position.X + this.Width) / (float)World.TileSize) - newRect.X);
-                newRect.Height = MathHelper.Max(1, Extensions.Ceiling((this.position.Y + this.Height) / (float)World.TileSize) - newRect.Y);
+                newRect.Width = MathHelper.Max(1, Extensions.CeilToInt((this.position.X + this.Width) / (float)World.TileSize) - newRect.X);
+                newRect.Height = MathHelper.Max(1, Extensions.CeilToInt((this.position.Y + this.Height) / (float)World.TileSize) - newRect.Y);
 
                 for(int x = newRect.X; x < newRect.X + newRect.Width; x++)
                 {
@@ -402,7 +440,7 @@ public class Player : MoveableEntity
 
             Renderer.SpriteBatch.Draw(
                 texture,
-                Center.ToVector2() - HitboxOffset.ToVector2(),
+                Center.ToVector2() - hitboxOffset.ToVector2(),
                 drawFrame,
                 Color,
                 Rotation,

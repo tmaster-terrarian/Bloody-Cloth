@@ -7,7 +7,7 @@ using BloodyCloth.Graphics;
 
 namespace BloodyCloth.GameContent;
 
-public class TriggerDef : ContentDef
+public class TriggerDef : AbstractDef
 {
     bool _triggered;
     bool _touchingPlayer;

@@ -51,12 +51,12 @@ public static class MathUtil
 
     public static float Snap(float value, float interval)
     {
-        return System.MathF.Floor(value / interval) * interval;
+        return MathF.Floor(value / interval) * interval;
     }
 
     public static float Snap(ref float value, float interval)
     {
-        value = System.MathF.Floor(value / interval) * interval;
+        value = MathF.Floor(value / interval) * interval;
         return value;
     }
 
@@ -90,12 +90,12 @@ public static class MathUtil
 
     public static float SnapCeiling(float value, float interval)
     {
-        return System.MathF.Ceiling(value / interval) * interval;
+        return MathF.Ceiling(value / interval) * interval;
     }
 
     public static float SnapCeiling(ref float value, float interval)
     {
-        value = System.MathF.Ceiling(value / interval) * interval;
+        value = MathF.Ceiling(value / interval) * interval;
         return value;
     }
 

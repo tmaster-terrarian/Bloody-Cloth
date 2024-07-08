@@ -6,5 +6,5 @@
 
 # story
 - some fuck opened the portal to the evil dimension
-- you want to close it
 - you are deemed a traitor
+- you want to close the portal

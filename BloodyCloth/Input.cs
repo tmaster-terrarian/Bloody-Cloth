@@ -119,17 +119,9 @@ public static class Input
     }
 }
 
-public enum MouseButtons
-{
-    LeftButton,
-    RightButton,
-    MiddleButton,
-    XButton1,
-    XButton2
-}
-
 public enum InputType
 {
+    Invalid = -1,
     Keyboard,
     Mouse,
     GamePad
@@ -137,49 +129,67 @@ public enum InputType
 
 public class PlayerInputMapping
 {
-    public Keys KeyRight { get; set; } = Keys.D;
-    public Keys KeyLeft { get; set; } = Keys.A;
-    public Keys KeyDown { get; set; } = Keys.S;
-    public Keys KeyUp { get; set; } = Keys.W;
-    public Keys KeyJump { get; set; } = Keys.Space;
+    public MappedInput Right { get; set; } = new(Keys.D);
+    public MappedInput Left { get; set; } = new(Keys.A);
+    public MappedInput Down { get; set; } = new(Keys.S);
+    public MappedInput Up { get; set; } = new(Keys.W);
+    public MappedInput Jump { get; set; } = new(Keys.Space);
 }
 
-public class MappedInput(int index, InputType type)
+public class MappedInput
 {
-    public int ButtonIndex { get; set; } = index;
+    public int ButtonIndex { get; }
 
-    public InputType InputType { get; private set; } = type;
+    public InputType InputType { get; }
 
-    public bool GetDown()
+    public bool IsDown => InputType switch
     {
-        return InputType switch
-        {
-            InputType.Keyboard => Input.GetDown((Keys)ButtonIndex),
-            InputType.Mouse => Input.GetDown((MouseButtons)ButtonIndex),
-            InputType.GamePad => Input.GetDown((Buttons)ButtonIndex),
-            _ => throw new System.Exception($"Invalid {nameof(BloodyCloth.InputType)}: {InputType}"),
-        };
+        InputType.Keyboard => Input.GetDown((Keys)ButtonIndex),
+        InputType.Mouse => Input.GetDown((MouseButtons)ButtonIndex),
+        InputType.GamePad => Input.GetDown((Buttons)ButtonIndex),
+        InputType.Invalid => false,
+        _ => throw new System.Exception($"Invalid {nameof(BloodyCloth.InputType)}: {InputType}"),
+    };
+
+    public bool Pressed => InputType switch
+    {
+        InputType.Keyboard => Input.GetPressed((Keys)ButtonIndex),
+        InputType.Mouse => Input.GetPressed((MouseButtons)ButtonIndex),
+        InputType.GamePad => Input.GetPressed((Buttons)ButtonIndex),
+        InputType.Invalid => false,
+        _ => throw new System.Exception($"Invalid {nameof(BloodyCloth.InputType)}: {InputType}"),
+    };
+
+    public bool Released => InputType switch
+    {
+        InputType.Keyboard => Input.GetReleased((Keys)ButtonIndex),
+        InputType.Mouse => Input.GetReleased((MouseButtons)ButtonIndex),
+        InputType.GamePad => Input.GetReleased((Buttons)ButtonIndex),
+        InputType.Invalid => false,
+        _ => throw new System.Exception($"Invalid {nameof(BloodyCloth.InputType)}: {InputType}"),
+    };
+
+    public MappedInput(int index, InputType type)
+    {
+        ButtonIndex = index;
+        InputType = type;
     }
 
-    public bool GetPressed()
+    public MappedInput(Keys keyboardKey)
     {
-        return InputType switch
-        {
-            InputType.Keyboard => Input.GetPressed((Keys)ButtonIndex),
-            InputType.Mouse => Input.GetPressed((MouseButtons)ButtonIndex),
-            InputType.GamePad => Input.GetPressed((Buttons)ButtonIndex),
-            _ => throw new System.Exception($"Invalid {nameof(BloodyCloth.InputType)}: {InputType}"),
-        };
+        ButtonIndex = (int)keyboardKey;
+        InputType = InputType.Keyboard;
     }
 
-    public bool GetReleased()
+    public MappedInput(Buttons gamePadButton)
     {
-        return InputType switch
-        {
-            InputType.Keyboard => Input.GetReleased((Keys)ButtonIndex),
-            InputType.Mouse => Input.GetReleased((MouseButtons)ButtonIndex),
-            InputType.GamePad => Input.GetReleased((Buttons)ButtonIndex),
-            _ => throw new System.Exception($"Invalid {nameof(BloodyCloth.InputType)}: {InputType}"),
-        };
+        ButtonIndex = (int)gamePadButton;
+        InputType = InputType.GamePad;
+    }
+
+    public MappedInput(MouseButtons mouseButton)
+    {
+        ButtonIndex = (int)mouseButton;
+        InputType = InputType.Mouse;
     }
 }

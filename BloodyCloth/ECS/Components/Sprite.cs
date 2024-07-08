@@ -17,7 +17,7 @@ namespace BloodyCloth.Ecs.Components
         public float LayerDepth
         {
             get => 1 - ((float)(_layerDepth + 10000) / 20000);
-            set => _layerDepth = Extensions.Floor((1 - MathHelper.Clamp(value, 0, 1)) * 20000 - 10000);
+            set => _layerDepth = Extensions.FloorToInt((1 - MathHelper.Clamp(value, 0, 1)) * 20000 - 10000);
         }
 
         public Sprite()

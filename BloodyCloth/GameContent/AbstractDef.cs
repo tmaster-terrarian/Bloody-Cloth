@@ -4,11 +4,11 @@ using Microsoft.Xna.Framework;
 
 namespace BloodyCloth.GameContent;
 
-public abstract class ContentDef
+public abstract class AbstractDef
 {
     public string Name { get; set; }
 
-    public ContentDef()
+    public AbstractDef()
     {
         Name = GetType().Name;
     }

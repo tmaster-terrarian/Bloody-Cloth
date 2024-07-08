@@ -5,7 +5,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace BloodyCloth.GameContent.Projectiles;
 
-public class FastArrowProjectile : ProjectileDef
+public class FastArrow : ProjectileDef
 {
     public float Gravity { get; set; } = 0.2f;
     public int GravityDelay { get; set; } = 30;

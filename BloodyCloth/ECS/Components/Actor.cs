@@ -70,7 +70,7 @@ namespace BloodyCloth.Ecs.Components
         public void MoveX(float amount, Action? onCollide)
         {
             xRemainder += amount;
-            int move = Extensions.Round(xRemainder);
+            int move = Extensions.RoundToInt(xRemainder);
             if(move != 0)
             {
                 xRemainder -= move;
@@ -96,7 +96,7 @@ namespace BloodyCloth.Ecs.Components
         public void MoveY(float amount, Action? onCollide)
         {
             yRemainder += amount;
-            int move = Extensions.Round(yRemainder);
+            int move = Extensions.RoundToInt(yRemainder);
             if(move != 0)
             {
                 yRemainder -= move;

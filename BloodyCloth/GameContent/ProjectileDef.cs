@@ -7,12 +7,13 @@ using BloodyCloth.Graphics;
 
 namespace BloodyCloth.GameContent;
 
-public class ProjectileDef : ContentDef, IDealsDamageContentDef
+public class ProjectileDef : AbstractDef, IDealsDamageContentDef
 {
     public string TexturePath { get; set; }
 
     public int Damage { get; set; } = 1;
     public bool CanHurtPlayer { get; set; }
+    public bool CanHurtEnemy { get; set; } = true;
 
     public virtual void OnCreate(Projectile projectile)
     {

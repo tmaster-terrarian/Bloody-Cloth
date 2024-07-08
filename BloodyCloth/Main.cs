@@ -86,6 +86,7 @@ public class Main : Game
             SynchronizeWithVerticalRetrace = true,
             PreferredBackBufferWidth = ScreenSize.X * Renderer.PixelScale,
             PreferredBackBufferHeight = ScreenSize.Y * Renderer.PixelScale,
+            GraphicsProfile = GraphicsProfile.HiDef,
         };
 
         Content.RootDirectory = "Content";
@@ -105,7 +106,7 @@ public class Main : Game
 
         base.Initialize();
 
-        lDtkRenderer = new(Renderer.SpriteBatch);
+        lDtkRenderer = new(Renderer.SpriteBatch.Base);
 
         lDtkFile = LDtkFile.FromFile(ProgramPath + "/Content/Levels/Level0.ldtk");
 
@@ -120,6 +121,8 @@ public class Main : Game
         }
 
         NextRoom(0);
+
+        var dummy = Enemy.CreateDirect(EnemyType.Dummy, new(24, 48), Vector2.Zero);
 
         _logger.LogInfo(new PathBuilder{AppendFinalSeparator = true}.Create(PathBuilder.LocalAppdataPath, AppMetadata.Name));
         _logger.LogInfo(AppMetadata.Version);
@@ -237,6 +240,8 @@ public class Main : Game
 
         Projectile.Update();
 
+        Enemy.Update();
+
         _camera.Zoom = 1;
         _camera.Position += (Player.Center.ToVector2() + new Vector2(-ScreenSize.X / 2f, -ScreenSize.Y / 2f) - _camera.Position) / 4f;
         _camera.Position = Vector2.Clamp(_camera.Position, Vector2.Zero, (World.Bounds.Size.ToVector2() * World.TileSize) - ScreenSize.ToVector2());
@@ -247,7 +252,7 @@ public class Main : Game
 
     protected override void Draw(GameTime gameTime)
     {
-        Renderer.BeginDraw(SamplerState.PointWrap, _camera.Transform, SpriteSortMode.Deferred);
+        Renderer.BeginDraw(SamplerState.PointWrap, _camera.Transform);
 
         lDtkRenderer.RenderPrerenderedLevel(lDtkWorld.Levels[RoomIndex]);
 
@@ -255,14 +260,16 @@ public class Main : Game
 
         Projectile.Draw();
 
+        Enemy.Draw();
+
         Player.Draw();
 
         Trigger.Draw();
 
-        Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFontBold, $"{ScreenSize.X}x{ScreenSize.Y}*{Renderer.PixelScale}", new Vector2(10, ScreenSize.Y - 10) + Vector2.Round(Camera.Position), Color.White, 4, 0, Vector2.UnitY * 14, 1);
-        Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFont, $"{MousePosition.X}, {MousePosition.Y}", new Vector2(10, ScreenSize.Y - 20) + Vector2.Round(Camera.Position), Color.White, 4, 0, Vector2.UnitY * 14, 1);
+        Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFontBold, $"{ScreenSize.X}x{ScreenSize.Y}*{Renderer.PixelScale}", new Vector2(10, ScreenSize.Y - 10) + Vector2.Round(Camera.Position), Color.White, 4, 0, Vector2.UnitY * 14, 1);
+        Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{MousePosition.X}, {MousePosition.Y}", new Vector2(10, ScreenSize.Y - 20) + Vector2.Round(Camera.Position), Color.White, 4, 0, Vector2.UnitY * 14, 1);
 
-        Renderer.SpriteBatch.DrawStringSpacesFix(Renderer.RegularFont, $"col checks: {_world.NumCollisionChecks}", new Vector2(128, ScreenSize.Y - 10) + Vector2.Round(Camera.Position), Color.White, 4, 0, Vector2.UnitY * 14, 1);
+        Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"col checks: {_world.NumCollisionChecks}", new Vector2(128, ScreenSize.Y - 10) + Vector2.Round(Camera.Position), Color.White, 4, 0, Vector2.UnitY * 14, 1);
 
         Renderer.EndDraw();
 
