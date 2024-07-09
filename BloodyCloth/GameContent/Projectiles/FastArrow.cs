@@ -38,5 +38,7 @@ public class FastArrow : ProjectileDef
 
         projectile.Pivot = new Vector2(projectile.Texture.Width, projectile.Texture.Height) / 2 + new Vector2(projectile.Width / 2, 0);
         projectile.TextureVisualOffset = new(projectile.Width / 2, projectile.Height / 2);
+
+        base.Update(projectile);
     }
 }
