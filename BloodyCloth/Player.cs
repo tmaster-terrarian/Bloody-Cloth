@@ -103,7 +103,7 @@ public class Player : MoveableEntity
         LayerDepth = 50;
 
         string texPath = "Images/Player/";
-        void addTex(string path, int count = 1) => AddTexture(Main.GetContent<Texture2D>(texPath + path), count);
+        void addTex(string path, int count = 1) => AddTexture(Main.LoadContent<Texture2D>(texPath + path), count);
 
         addTex("idle");
         addTex("run", 6);
@@ -375,7 +375,7 @@ public class Player : MoveableEntity
             if(Main.Debug.Enabled)
             {
                 NineSlice.DrawNineSlice(
-                    Main.GetContent<Texture2D>("Images/Other/tileOutline"),
+                    Main.LoadContent<Texture2D>("Images/Other/tileOutline"),
                     new Rectangle(image.Position.X, image.Position.Y, Width, Height),
                     null,
                     new Point(1),
@@ -417,7 +417,7 @@ public class Player : MoveableEntity
                     for(int y = newRect.Y; y < newRect.Y + newRect.Height; y++)
                     {
                         NineSlice.DrawNineSlice(
-                            Main.GetContent<Texture2D>("Images/Other/tileOutline"),
+                            Main.LoadContent<Texture2D>("Images/Other/tileOutline"),
                             new Rectangle(x, y, 1, 1).ScalePosition(World.TileSize),
                             null,
                             new Point(1),
@@ -453,7 +453,7 @@ public class Player : MoveableEntity
 
         if(Main.Debug.Enabled)
         {
-            NineSlice.DrawNineSlice(Main.GetContent<Texture2D>("Images/Other/tileOutline"), Hitbox, null, new Point(1), new Point(1), Color.Red * 0.5f);
+            NineSlice.DrawNineSlice(Main.LoadContent<Texture2D>("Images/Other/tileOutline"), Hitbox, null, new Point(1), new Point(1), Color.Red * 0.5f);
         }
     }
 

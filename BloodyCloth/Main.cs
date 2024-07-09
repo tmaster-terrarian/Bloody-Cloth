@@ -106,7 +106,7 @@ public class Main : Game
 
         base.Initialize();
 
-        lDtkRenderer = new(Renderer.SpriteBatch.Base);
+        lDtkRenderer = new(Renderer.SpriteBatch.Base, Content);
 
         lDtkFile = LDtkFile.FromFile(ProgramPath + "/Content/Levels/Level0.ldtk");
 
@@ -247,6 +247,8 @@ public class Main : Game
         _camera.Position = Vector2.Clamp(_camera.Position, Vector2.Zero, (World.Bounds.Size.ToVector2() * World.TileSize) - ScreenSize.ToVector2());
         _camera.Update();
 
+        ElapsedTime++;
+
         base.Update(gameTime);
     }
 
@@ -266,21 +268,21 @@ public class Main : Game
 
         Trigger.Draw();
 
-        Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFontBold, $"{ScreenSize.X}x{ScreenSize.Y}*{Renderer.PixelScale}", new Vector2(10, ScreenSize.Y - 10) + Vector2.Round(Camera.Position), Color.White, 4, 0, Vector2.UnitY * 14, 1);
-        Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{MousePosition.X}, {MousePosition.Y}", new Vector2(10, ScreenSize.Y - 20) + Vector2.Round(Camera.Position), Color.White, 4, 0, Vector2.UnitY * 14, 1);
-
-        Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"col checks: {_world.NumCollisionChecks}", new Vector2(128, ScreenSize.Y - 10) + Vector2.Round(Camera.Position), Color.White, 4, 0, Vector2.UnitY * 14, 1);
-
         Renderer.EndDraw();
+        Renderer.BeginDrawUI();
 
-        base.Draw(gameTime);
+        Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFontBold, $"{ScreenSize.X}x{ScreenSize.Y}*{Renderer.PixelScale}", new Vector2(10, ScreenSize.Y - 10), Color.White, 4, 0, Vector2.UnitY * 14, 1);
+        Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{MousePosition.X}, {MousePosition.Y}", new Vector2(10, ScreenSize.Y - 20), Color.White, 4, 0, Vector2.UnitY * 14, 1);
 
-        ElapsedTime++;
+        Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"col checks: {_world.NumCollisionChecks}", new Vector2(128, ScreenSize.Y - 10), Color.White, 4, 0, Vector2.UnitY * 14, 1);
+
+        Renderer.EndDrawUI();
+        Renderer.FinalizeDraw();
     }
 
     private static readonly List<string> missingAssets = [];
 
-    public static T GetContent<T>(string assetName)
+    public static T LoadContent<T>(string assetName)
     {
         if(missingAssets.Contains(assetName)) return default;
 

@@ -131,7 +131,7 @@ public class World : IDisposable
 
                 if(Main.Debug.Enabled)
                 {
-                    NineSlice.DrawNineSlice(Main.GetContent<Texture2D>("Images/Other/tileOutline"), _collisions[x, y], null, new Point(1), new Point(1), Color.Red * 0.5f);
+                    NineSlice.DrawNineSlice(Main.LoadContent<Texture2D>("Images/Other/tileOutline"), _collisions[x, y], null, new Point(1), new Point(1), Color.Red * 0.5f);
                 }
             }
         }

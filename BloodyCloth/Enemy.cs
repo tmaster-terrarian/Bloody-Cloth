@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework.Graphics;
 using BloodyCloth.GameContent;
 using BloodyCloth.Graphics;
 using BloodyCloth.Utils;
+using System.Collections.Generic;
 
 namespace BloodyCloth;
 
@@ -198,7 +199,7 @@ public class Enemy : MoveableEntity
     public static void Draw()
     {
         Texture2D tex = null;
-        if(Main.Debug.Enabled) tex = Main.GetContent<Texture2D>("Images/Other/tileOutline");
+        if(Main.Debug.Enabled) tex = Main.LoadContent<Texture2D>("Images/Other/tileOutline");
 
         for(int i = 0; i < enemies.Length; i++)
         {
@@ -223,7 +224,7 @@ public class Enemy : MoveableEntity
                         for(int y = newRect.Y; y < newRect.Y + newRect.Height; y++)
                         {
                             NineSlice.DrawNineSlice(
-                                Main.GetContent<Texture2D>("Images/Other/tileOutline"),
+                                Main.LoadContent<Texture2D>("Images/Other/tileOutline"),
                                 new Rectangle(x, y, 1, 1).ScalePosition(World.TileSize),
                                 null,
                                 new Point(1),
@@ -290,4 +291,45 @@ public class Enemy : MoveableEntity
     {
         markedForRemoval = true;
     }
+
+    public static Enemy? EnemyPlace(Rectangle bbox)
+    {
+        foreach(var enemy in enemies)
+        {
+            if(enemy is null || !enemy.Active || enemy.markedForRemoval) continue;
+
+            if(Vector2.DistanceSquared(bbox.Center.ToVector2(), enemy.Hitbox.Center.ToVector2()) > 1024) continue;
+
+            if(bbox.Right <= enemy.Hitbox.Left) continue;
+            if(bbox.Bottom <= enemy.Hitbox.Top) continue;
+            if(bbox.Left >= enemy.Hitbox.Right) continue;
+            if(bbox.Top >= enemy.Hitbox.Bottom) continue;
+
+            Main.World.NumCollisionChecks++;
+            if(enemy.Hitbox.Intersects(bbox)) return enemy;
+        }
+        return null;
+    }
+
+    public static List<Enemy> GetIntersectingEnemies(Rectangle bbox)
+    {
+        List<Enemy> list = [];
+        foreach(var enemy in enemies)
+        {
+            if(enemy is null || !enemy.Active || enemy.markedForRemoval) continue;
+
+            if(Vector2.DistanceSquared(bbox.Center.ToVector2(), enemy.Hitbox.Center.ToVector2()) > 1024) continue;
+
+            if(bbox.Right <= enemy.Hitbox.Left) continue;
+            if(bbox.Bottom <= enemy.Hitbox.Top) continue;
+            if(bbox.Left >= enemy.Hitbox.Right) continue;
+            if(bbox.Top >= enemy.Hitbox.Bottom) continue;
+
+            Main.World.NumCollisionChecks++;
+            if(enemy.Hitbox.Intersects(bbox)) list.Add(enemy);
+        }
+        return list;
+    }
+
+    public static bool EnemyMeeting(Rectangle bbox) => EnemyPlace(bbox) is not null;
 }

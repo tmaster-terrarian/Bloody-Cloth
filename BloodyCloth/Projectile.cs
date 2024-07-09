@@ -41,7 +41,7 @@ public class Projectile : MoveableEntity
 
     public string TexturePath { get; set; }
 
-    public Texture2D Texture => Main.GetContent<Texture2D>("Images/" + TexturePath);
+    public Texture2D Texture => Main.LoadContent<Texture2D>("Images/" + TexturePath);
 
     public Vector2 Pivot { get; set; }
     public Vector2 TextureVisualOffset { get; set; }
@@ -165,7 +165,7 @@ public class Projectile : MoveableEntity
     public static void Draw()
     {
         Texture2D tex = null;
-        if(Main.Debug.Enabled) tex = Main.GetContent<Texture2D>("Images/Other/tileOutline");
+        if(Main.Debug.Enabled) tex = Main.LoadContent<Texture2D>("Images/Other/tileOutline");
 
         for(int i = 0; i < projectiles.Length; i++)
         {
@@ -190,7 +190,7 @@ public class Projectile : MoveableEntity
                         for(int y = newRect.Y; y < newRect.Y + newRect.Height; y++)
                         {
                             NineSlice.DrawNineSlice(
-                                Main.GetContent<Texture2D>("Images/Other/tileOutline"),
+                                Main.LoadContent<Texture2D>("Images/Other/tileOutline"),
                                 new Rectangle(x, y, 1, 1).ScalePosition(World.TileSize),
                                 null,
                                 new Point(1),
@@ -272,5 +272,11 @@ public class Projectile : MoveableEntity
         }
 
         return null;
+    }
+
+    public bool CanHurtPlayer(Player player = null)
+    {
+        player ??= Main.Player;
+        return !markedForRemoval && player.State != PlayerState.Dead && player.Active;
     }
 }

@@ -9,10 +9,7 @@ public static class NineSlice
 {
 	public static void DrawNineSlice(Texture2D texture, Rectangle destinationRectangle, Rectangle? sourceRectangle, Point topLeft, Point bottomRight, Color color, Vector2 origin, SpriteEffects effects = SpriteEffects.None, float layerDepth = 0)
 	{
-		if(texture == null)
-		{
-			throw new System.ArgumentNullException(nameof(texture));
-		}
+		System.ArgumentNullException.ThrowIfNull(texture);
 
 		var dest = destinationRectangle;
 		var src = sourceRectangle ?? texture.Bounds;

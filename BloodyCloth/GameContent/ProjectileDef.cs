@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
 using BloodyCloth.Graphics;
+using BloodyCloth.Utils;
 
 namespace BloodyCloth.GameContent;
 
@@ -21,7 +22,28 @@ public class ProjectileDef : AbstractDef, IDealsDamageContentDef
         projectile.Damage = Damage;
     }
 
-    public virtual void Update(Projectile projectile) {}
+    public virtual void Update(Projectile projectile)
+    {
+        if(CanHurtEnemy)
+        {
+            Enemy enemy = Enemy.EnemyPlace(projectile.Hitbox.Shift(projectile.velocity.ToPoint()));
+            if(enemy is not null)
+            {
+                // contact!
+                OnHitAnything(projectile);
+                OnHitEnemy(projectile, enemy);
+            }
+        }
+
+        if(CanHurtPlayer)
+        {
+            if(Main.Player.Hitbox.Intersects(projectile.Hitbox) && projectile.CanHurtPlayer())
+            {
+                OnHitAnything(projectile);
+                OnHitPlayer(projectile, Main.Player);
+            }
+        }
+    }
 
     public virtual void Draw(Projectile projectile)
     {
@@ -39,6 +61,20 @@ public class ProjectileDef : AbstractDef, IDealsDamageContentDef
             (projectile.Facing < 0 ? SpriteEffects.FlipHorizontally : SpriteEffects.None) | (projectile.FlipY < 0 ? SpriteEffects.FlipVertically : SpriteEffects.None),
             projectile.ConvertedLayerDepth
         );
+    }
+
+    public virtual void OnHitAnything(Projectile projectile) {}
+
+    public virtual void OnHitEnemy(Projectile projectile, Enemy enemy)
+    {
+        enemy.Hurt(projectile.Damage);
+        projectile.Kill();
+    }
+
+    public virtual void OnHitPlayer(Projectile projectile, Player player)
+    {
+        // player damage logic
+        projectile.Kill();
     }
 
     public virtual void OnDestroy(Projectile projectile) {}

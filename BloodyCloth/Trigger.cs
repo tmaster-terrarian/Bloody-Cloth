@@ -79,7 +79,7 @@ public class Trigger
     {
         if(!Main.Debug.Enabled) return;
 
-        Texture2D tex = Main.GetContent<Texture2D>("Images/Other/tileOutline");
+        Texture2D tex = Main.LoadContent<Texture2D>("Images/Other/tileOutline");
 
         for(int i = 0; i < triggers.Count; i++)
         {

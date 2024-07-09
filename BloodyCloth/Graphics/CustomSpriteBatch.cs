@@ -15,6 +15,10 @@ public class CustomSpriteBatch
 
     public Matrix? TransformMatrix { get; set; }
 
+    public SpriteBatch Base { get; }
+
+    public GraphicsDevice GraphicsDevice { get; }
+
     private readonly struct NormalsQueueItem(Texture2D texture, Rectangle destinationRectangle, Rectangle sourceRectangle, Color color, float rotation, Vector2 origin, SpriteEffects effects, float layerDepth)
     {
         public Texture2D Texture { get; } = texture;
@@ -23,13 +27,9 @@ public class CustomSpriteBatch
         public Color Color { get; } = color;
         public float Rotation { get; } = rotation;
         public Vector2 Origin { get; } = origin;
-        public SpriteEffects Effects { get; } = effects;
+        public SpriteEffects SpriteEffects { get; } = effects;
         public float LayerDepth { get; } = layerDepth;
     }
-
-    public SpriteBatch Base { get; }
-
-    public GraphicsDevice GraphicsDevice { get; }
 
     public CustomSpriteBatch(GraphicsDevice graphicsDevice)
     {
@@ -38,131 +38,159 @@ public class CustomSpriteBatch
 
         normalMap = new RenderTarget2D(GraphicsDevice, Renderer.ScreenSize.X, Renderer.ScreenSize.Y);
 
-        effect = Main.GetContent<Effect>("FX/NormalLit");
+        effect = Main.LoadContent<Effect>("FX/NormalLit2");
     }
 
     public void Draw(Texture2D texture, Vector2 position, Rectangle? sourceRectangle, Color color, float rotation, Vector2 origin, Vector2 scale, SpriteEffects effects, float layerDepth)
     {
+        System.ArgumentNullException.ThrowIfNull(texture);
+
         Base.Draw(texture, position, sourceRectangle, color, rotation, origin, scale, effects, layerDepth);
-        var rect = ConvertPosScale(texture.Width, texture.Height, position, scale);
-        AddNormal(null, rect, sourceRectangle, color, rotation, origin, effects, layerDepth);
     }
 
     public void Draw(Texture2D texture, Vector2 position, Rectangle? sourceRectangle, Color color, float rotation, Vector2 origin, float scale, SpriteEffects effects, float layerDepth)
     {
+        System.ArgumentNullException.ThrowIfNull(texture);
+
         Base.Draw(texture, position, sourceRectangle, color, rotation, origin, scale, effects, layerDepth);
-        var rect = ConvertPosScale(texture.Width, texture.Height, position, new(scale));
-        AddNormal(null, rect, sourceRectangle, color, rotation, origin, effects, layerDepth);
     }
 
     public void Draw(Texture2D texture, Rectangle destinationRectangle, Rectangle? sourceRectangle, Color color, float rotation, Vector2 origin, SpriteEffects effects, float layerDepth)
     {
+        System.ArgumentNullException.ThrowIfNull(texture);
+
         Base.Draw(texture, destinationRectangle, sourceRectangle, color, rotation, origin, effects, layerDepth);
-        AddNormal(null, destinationRectangle, sourceRectangle, color, rotation, origin, effects, layerDepth);
     }
 
     public void Draw(Texture2D texture, Vector2 position, Rectangle? sourceRectangle, Color color)
     {
+        System.ArgumentNullException.ThrowIfNull(texture);
+
         Base.Draw(texture, position, sourceRectangle, color);
-        var rect = ConvertPosScale(texture.Width, texture.Height, position, new(1));
-        AddNormal(null, rect, sourceRectangle, color, 0, Vector2.Zero, SpriteEffects.None, 0);
     }
 
     public void Draw(Texture2D texture, Rectangle destinationRectangle, Rectangle? sourceRectangle, Color color)
     {
+        System.ArgumentNullException.ThrowIfNull(texture);
+
         Base.Draw(texture, destinationRectangle, sourceRectangle, color);
-        AddNormal(null, destinationRectangle, sourceRectangle, color, 0, Vector2.Zero, SpriteEffects.None, 0);
     }
 
     public void Draw(Texture2D texture, Vector2 position, Color color)
     {
+        System.ArgumentNullException.ThrowIfNull(texture);
+
         Base.Draw(texture, position, color);
-        var rect = ConvertPosScale(texture.Width, texture.Height, position, new(1));
-        AddNormal(null, rect, null, color, 0, Vector2.Zero, SpriteEffects.None, 0);
     }
 
     public void Draw(Texture2D texture, Rectangle destinationRectangle, Color color)
     {
+        System.ArgumentNullException.ThrowIfNull(texture);
+
         Base.Draw(texture, destinationRectangle, color);
-        AddNormal(null, destinationRectangle, null, color, 0, Vector2.Zero, SpriteEffects.None, 0);
     }
 
     public void DrawNormal(Texture2D texture, Vector2 position, Rectangle? sourceRectangle, Color color, float rotation, Vector2 origin, Vector2 scale, SpriteEffects effects, float layerDepth)
     {
+        System.ArgumentNullException.ThrowIfNull(texture);
+
         var rect = ConvertPosScale(texture.Width, texture.Height, position, scale);
         AddNormal(texture, rect, sourceRectangle, color, rotation, origin, effects, layerDepth);
     }
 
     public void DrawNormal(Texture2D texture, Vector2 position, Rectangle? sourceRectangle, Color color, float rotation, Vector2 origin, float scale, SpriteEffects effects, float layerDepth)
     {
+        System.ArgumentNullException.ThrowIfNull(texture);
+
         var rect = ConvertPosScale(texture.Width, texture.Height, position, new(scale));
         AddNormal(texture, rect, sourceRectangle, color, rotation, origin, effects, layerDepth);
     }
 
     public void DrawNormal(Texture2D texture, Rectangle destinationRectangle, Rectangle? sourceRectangle, Color color, float rotation, Vector2 origin, SpriteEffects effects, float layerDepth)
     {
+        System.ArgumentNullException.ThrowIfNull(texture);
+
         AddNormal(texture, destinationRectangle, sourceRectangle, color, rotation, origin, effects, layerDepth);
     }
 
     public void DrawNormal(Texture2D texture, Vector2 position, Rectangle? sourceRectangle, Color color)
     {
+        System.ArgumentNullException.ThrowIfNull(texture);
+
         var rect = ConvertPosScale(texture.Width, texture.Height, position, new(1));
         AddNormal(texture, rect, sourceRectangle, color, 0, Vector2.Zero, SpriteEffects.None, 0);
     }
 
     public void DrawNormal(Texture2D texture, Rectangle destinationRectangle, Rectangle? sourceRectangle, Color color)
     {
+        System.ArgumentNullException.ThrowIfNull(texture);
+
         AddNormal(texture, destinationRectangle, sourceRectangle, color, 0, Vector2.Zero, SpriteEffects.None, 0);
     }
 
     public void DrawNormal(Texture2D texture, Vector2 position, Color color)
     {
+        System.ArgumentNullException.ThrowIfNull(texture);
+
         var rect = ConvertPosScale(texture.Width, texture.Height, position, new(1));
         AddNormal(texture, rect, null, color, 0, Vector2.Zero, SpriteEffects.None, 0);
     }
 
     public void DrawNormal(Texture2D texture, Rectangle destinationRectangle, Color color)
     {
+        System.ArgumentNullException.ThrowIfNull(texture);
+
         AddNormal(texture, destinationRectangle, null, color, 0, Vector2.Zero, SpriteEffects.None, 0);
     }
 
     public void Finalize(RenderTarget2D renderTarget)
     {
-        Base.End();
-
         Base.GraphicsDevice.SetRenderTarget(normalMap);
-        Base.GraphicsDevice.Clear(new Color(127, 127, 254, 255));
+        Base.GraphicsDevice.Clear(new Color(128, 128, 255, 255));
 
         Base.Begin(samplerState: SamplerState.PointWrap, transformMatrix: TransformMatrix);
+
+        DrawNormal(Main.LoadContent<Texture2D>("Images/Levels/Tower/Bricks_Normal"), Vector2.Zero, Color.White);
 
         foreach(var item in normalsQueue)
         {
             if(item.Texture is null) continue;
 
-            Base.Draw(item.Texture, item.DestinationRectangle, item.SourceRectange, item.Color, item.Rotation, item.Origin, item.Effects, item.LayerDepth);
+            Base.Draw(item.Texture, item.DestinationRectangle, item.SourceRectange, item.Color, item.Rotation, item.Origin, item.SpriteEffects, item.LayerDepth);
         }
 
         normalsQueue.Clear();
 
         Base.End();
 
-        // var view = Matrix.Multiply(TransformMatrix ?? Matrix.Identity, Matrix.CreateOrthographicOffCenter(0, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height, 0, -1, 0));
+        Matrix world = Matrix.CreateWorld(Vector3.Zero, Vector3.Forward, Vector3.Up);
 
+        var view = Matrix.Multiply(Matrix.Multiply(world, TransformMatrix ?? Matrix.Identity), Matrix.CreateOrthographicOffCenter(0, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height, 0, -1, 0));
+
+        // first attempt
         // effect.Parameters["LightPosition"].SetValue(new Vector3(Main.MousePosition.ToVector2(), 0));
         // effect.Parameters["LightColor"].SetValue(Color.White.ToVector3());
         // effect.Parameters["LightOpacity"].SetValue(1);
         // effect.Parameters["AmbientColor"].SetValue(new Vector3(0.35f));
-        // effect.Parameters["World"].SetValue(TransformMatrix ?? Matrix.Identity);
+        // effect.Parameters["World"].SetValue(world * (TransformMatrix ?? Matrix.Identity));
         // effect.Parameters["LightDistanceSquared"].SetValue(64);
         // effect.Parameters["ViewProjection"].SetValue(view);
         // effect.Parameters["ScreenTexture"].SetValue(renderTarget);
         // effect.Parameters["NormalTexture"].SetValue(normalMap);
         // effect.CurrentTechnique.Passes[0].Apply();
 
+        // second attempt
+        // effect.Parameters["World"].SetValue(world);
+        // effect.Parameters["ViewProjection"].SetValue(view);
+        // effect.Parameters["SpriteTexture"].SetValue(renderTarget);
+        // effect.Parameters["NormalMap"].SetValue(normalMap);
+        // effect.Parameters["WorldInverseTranspose"].SetValue(Matrix.Transpose(Matrix.Invert(world)));
+        // effect.CurrentTechnique.Passes[0].Apply();
+
         Base.GraphicsDevice.SetRenderTarget(null);
         Base.GraphicsDevice.Clear(Color.Black);
 
-        Base.Begin(samplerState: SamplerState.PointWrap, blendState: BlendState.Opaque);
+        Base.Begin(samplerState: SamplerState.PointWrap, blendState: BlendState.AlphaBlend);
         Base.Draw(renderTarget, Vector2.Zero, null, Color.White, 0, Vector2.Zero, Renderer.PixelScale, SpriteEffects.None, 0);
         Base.End();
     }
