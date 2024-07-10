@@ -9,9 +9,6 @@ namespace BloodyCloth.GameContent;
 
 public class TriggerDef : AbstractDef
 {
-    bool _triggered;
-    bool _touchingPlayer;
-
     public bool TriggerOnce { get; set; }
 
     public Action<Trigger> OnEnter { get; set; }

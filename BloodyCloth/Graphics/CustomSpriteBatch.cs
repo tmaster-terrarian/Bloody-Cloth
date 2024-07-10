@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -43,56 +45,56 @@ public class CustomSpriteBatch
 
     public void Draw(Texture2D texture, Vector2 position, Rectangle? sourceRectangle, Color color, float rotation, Vector2 origin, Vector2 scale, SpriteEffects effects, float layerDepth)
     {
-        System.ArgumentNullException.ThrowIfNull(texture);
+        ArgumentNullException.ThrowIfNull(texture);
 
         Base.Draw(texture, position, sourceRectangle, color, rotation, origin, scale, effects, layerDepth);
     }
 
     public void Draw(Texture2D texture, Vector2 position, Rectangle? sourceRectangle, Color color, float rotation, Vector2 origin, float scale, SpriteEffects effects, float layerDepth)
     {
-        System.ArgumentNullException.ThrowIfNull(texture);
+        ArgumentNullException.ThrowIfNull(texture);
 
         Base.Draw(texture, position, sourceRectangle, color, rotation, origin, scale, effects, layerDepth);
     }
 
     public void Draw(Texture2D texture, Rectangle destinationRectangle, Rectangle? sourceRectangle, Color color, float rotation, Vector2 origin, SpriteEffects effects, float layerDepth)
     {
-        System.ArgumentNullException.ThrowIfNull(texture);
+        ArgumentNullException.ThrowIfNull(texture);
 
         Base.Draw(texture, destinationRectangle, sourceRectangle, color, rotation, origin, effects, layerDepth);
     }
 
     public void Draw(Texture2D texture, Vector2 position, Rectangle? sourceRectangle, Color color)
     {
-        System.ArgumentNullException.ThrowIfNull(texture);
+        ArgumentNullException.ThrowIfNull(texture);
 
         Base.Draw(texture, position, sourceRectangle, color);
     }
 
     public void Draw(Texture2D texture, Rectangle destinationRectangle, Rectangle? sourceRectangle, Color color)
     {
-        System.ArgumentNullException.ThrowIfNull(texture);
+        ArgumentNullException.ThrowIfNull(texture);
 
         Base.Draw(texture, destinationRectangle, sourceRectangle, color);
     }
 
     public void Draw(Texture2D texture, Vector2 position, Color color)
     {
-        System.ArgumentNullException.ThrowIfNull(texture);
+        ArgumentNullException.ThrowIfNull(texture);
 
         Base.Draw(texture, position, color);
     }
 
     public void Draw(Texture2D texture, Rectangle destinationRectangle, Color color)
     {
-        System.ArgumentNullException.ThrowIfNull(texture);
+        ArgumentNullException.ThrowIfNull(texture);
 
         Base.Draw(texture, destinationRectangle, color);
     }
 
     public void DrawNormal(Texture2D texture, Vector2 position, Rectangle? sourceRectangle, Color color, float rotation, Vector2 origin, Vector2 scale, SpriteEffects effects, float layerDepth)
     {
-        System.ArgumentNullException.ThrowIfNull(texture);
+        ArgumentNullException.ThrowIfNull(texture);
 
         var rect = ConvertPosScale(texture.Width, texture.Height, position, scale);
         AddNormal(texture, rect, sourceRectangle, color, rotation, origin, effects, layerDepth);
@@ -100,7 +102,7 @@ public class CustomSpriteBatch
 
     public void DrawNormal(Texture2D texture, Vector2 position, Rectangle? sourceRectangle, Color color, float rotation, Vector2 origin, float scale, SpriteEffects effects, float layerDepth)
     {
-        System.ArgumentNullException.ThrowIfNull(texture);
+        ArgumentNullException.ThrowIfNull(texture);
 
         var rect = ConvertPosScale(texture.Width, texture.Height, position, new(scale));
         AddNormal(texture, rect, sourceRectangle, color, rotation, origin, effects, layerDepth);
@@ -108,14 +110,14 @@ public class CustomSpriteBatch
 
     public void DrawNormal(Texture2D texture, Rectangle destinationRectangle, Rectangle? sourceRectangle, Color color, float rotation, Vector2 origin, SpriteEffects effects, float layerDepth)
     {
-        System.ArgumentNullException.ThrowIfNull(texture);
+        ArgumentNullException.ThrowIfNull(texture);
 
         AddNormal(texture, destinationRectangle, sourceRectangle, color, rotation, origin, effects, layerDepth);
     }
 
     public void DrawNormal(Texture2D texture, Vector2 position, Rectangle? sourceRectangle, Color color)
     {
-        System.ArgumentNullException.ThrowIfNull(texture);
+        ArgumentNullException.ThrowIfNull(texture);
 
         var rect = ConvertPosScale(texture.Width, texture.Height, position, new(1));
         AddNormal(texture, rect, sourceRectangle, color, 0, Vector2.Zero, SpriteEffects.None, 0);
@@ -123,14 +125,14 @@ public class CustomSpriteBatch
 
     public void DrawNormal(Texture2D texture, Rectangle destinationRectangle, Rectangle? sourceRectangle, Color color)
     {
-        System.ArgumentNullException.ThrowIfNull(texture);
+        ArgumentNullException.ThrowIfNull(texture);
 
         AddNormal(texture, destinationRectangle, sourceRectangle, color, 0, Vector2.Zero, SpriteEffects.None, 0);
     }
 
     public void DrawNormal(Texture2D texture, Vector2 position, Color color)
     {
-        System.ArgumentNullException.ThrowIfNull(texture);
+        ArgumentNullException.ThrowIfNull(texture);
 
         var rect = ConvertPosScale(texture.Width, texture.Height, position, new(1));
         AddNormal(texture, rect, null, color, 0, Vector2.Zero, SpriteEffects.None, 0);
@@ -138,15 +140,33 @@ public class CustomSpriteBatch
 
     public void DrawNormal(Texture2D texture, Rectangle destinationRectangle, Color color)
     {
-        System.ArgumentNullException.ThrowIfNull(texture);
+        ArgumentNullException.ThrowIfNull(texture);
 
         AddNormal(texture, destinationRectangle, null, color, 0, Vector2.Zero, SpriteEffects.None, 0);
     }
 
-    public void Finalize(RenderTarget2D renderTarget)
+    public void DrawLine(Vector2 start, Vector2 end, Color color, float width = 1, float layerDepth = 0)
     {
-        Base.GraphicsDevice.SetRenderTarget(normalMap);
-        Base.GraphicsDevice.Clear(new Color(128, 128, 255, 255));
+        Vector2 pivot = new(0, 0.5f);
+        Texture2D tex = Main.OnePixel;
+
+        float length = Vector2.Distance(start, end);
+
+        Base.Draw(tex, start, null, color, (end - start).ToRotation(), pivot, new Vector2(length, width), SpriteEffects.None, layerDepth);
+    }
+
+    public void DrawLine(Vector2 start, float direction, float length, Color color, float width = 1, float layerDepth = 0)
+    {
+        Vector2 pivot = new(0, 0.5f);
+        Texture2D tex = Main.OnePixel;
+
+        Base.Draw(tex, start, null, color, direction, pivot, new Vector2(length, width), SpriteEffects.None, layerDepth);
+    }
+
+    public void FinalizeDraw()
+    {
+        Renderer.GraphicsDevice.SetRenderTarget(normalMap);
+        Renderer.GraphicsDevice.Clear(new Color(128, 128, 255, 255));
 
         Base.Begin(samplerState: SamplerState.PointWrap, transformMatrix: TransformMatrix);
 
@@ -187,11 +207,11 @@ public class CustomSpriteBatch
         // effect.Parameters["WorldInverseTranspose"].SetValue(Matrix.Transpose(Matrix.Invert(world)));
         // effect.CurrentTechnique.Passes[0].Apply();
 
-        Base.GraphicsDevice.SetRenderTarget(null);
-        Base.GraphicsDevice.Clear(Color.Black);
+        Renderer.GraphicsDevice.SetRenderTarget(null);
+        Renderer.GraphicsDevice.Clear(Color.Black);
 
-        Base.Begin(samplerState: SamplerState.PointWrap, blendState: BlendState.AlphaBlend);
-        Base.Draw(renderTarget, Vector2.Zero, null, Color.White, 0, Vector2.Zero, Renderer.PixelScale, SpriteEffects.None, 0);
+        Base.Begin(samplerState: SamplerState.PointWrap, blendState: BlendState.Opaque);
+        Base.Draw(Renderer.RenderTarget, Vector2.Zero, null, Color.White, 0, Vector2.Zero, Renderer.PixelScale, SpriteEffects.None, 0);
         Base.End();
     }
 

@@ -21,7 +21,7 @@ public class FastArrow : ProjectileDef
 
     public override void Update(Projectile projectile)
     {
-        ref int gravityTicker = ref projectile.genericIntValues[0];
+        ref int gravityTicker = ref projectile.GenericIntValues[0];
 
         if(gravityTicker >= 0 && gravityTicker < GravityDelay)
             gravityTicker++;

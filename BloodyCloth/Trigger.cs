@@ -99,11 +99,11 @@ public class Trigger
                 0
             );
 
-            Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.SmallFont, /*nameof(TriggerType) + "." +*/ trigger.DefID.ToString(), trigger.Bounds.Location.ToVector2() + new Vector2(1, -1), Color.White * 0.9f, 2);
+            Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.SmallFont, /*nameof(TriggerType) + "." +*/ trigger.DefID.ToString(), trigger.Bounds.Location.ToVector2() + new Vector2(2, -1), Color.White * 0.9f, 2);
         }
     }
 
-    public static void ClearTriggers()
+    public static void ClearAll()
     {
         triggers = [];
     }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -6,7 +7,6 @@ using Microsoft.Xna.Framework.Graphics;
 using BloodyCloth.GameContent;
 using BloodyCloth.Graphics;
 using BloodyCloth.Utils;
-using System.Collections.Generic;
 
 namespace BloodyCloth;
 
@@ -24,11 +24,14 @@ public class Enemy : MoveableEntity
 
     private EnemyType defId = EnemyType.Invalid;
     private bool markedForRemoval;
-    private EnemyState _state;
 
+    private EnemyState _state;
     private float hp = 1;
     private int regenCounter;
     private int regenTime = 60;
+
+    public float[] GenericFloatValues { get; } = new float[4];
+    public int[] GenericIntValues { get; } = new int[4];
 
     public uint ID { get; private set; }
 
@@ -37,6 +40,7 @@ public class Enemy : MoveableEntity
     public bool HasValidType => DefID >= 0;
 
     public bool Visible { get; set; } = true;
+    public float Alpha { get; set; } = 1;
 
     public float HP { get => hp; private set => hp = value; }
 
@@ -44,11 +48,34 @@ public class Enemy : MoveableEntity
 
     public bool RegeneratesHP { get; set; }
 
+    public float RegenHealthPerSecond
+    {
+        get => regenTime == 0 ? 0 : 60f / regenTime;
+        set => regenTime = value == 0 ? 0 : (int)(60f / value);
+    }
+
     public bool Invincible { get; set; }
 
     public bool IsDead { get; private set; }
 
     public bool ShouldMove { get; set; } = true;
+
+    public bool PushesPlayer { get; set; }
+    public bool PushedByPlayer { get; set; }
+
+    public float Mass { get; set; }
+
+    public int FrameNumber { get; set; } = 1;
+    public int Frame { get; set; }
+
+    public string TexturePath { get; set; }
+
+    public Texture2D Texture => Main.LoadContent<Texture2D>("Images/" + TexturePath);
+
+    public Vector2 Pivot { get; set; }
+    public Vector2 TextureVisualOffset { get; set; }
+    public Vector2 FacingSpecificVisualOffset { get; set; }
+    public int FlipY { get; set; } = 1;
 
     public float StateTimer { get; set; }
     public EnemyState State
@@ -75,6 +102,8 @@ public class Enemy : MoveableEntity
         this.ID = _enemyID++;
         this.defId = EnemyType.Invalid;
         this.State = EnemyState.Normal;
+
+        this.NudgeOnMove = true;
     }
 
     private Enemy(EnemyType id) : this()
@@ -167,10 +196,10 @@ public class Enemy : MoveableEntity
             {
                 if(enemy.RegeneratesHP)
                 {
-                    if(++enemy.regenCounter >= enemy.regenTime)
+                    if(++enemy.regenCounter >= Math.Abs(enemy.regenTime))
                     {
                         enemy.regenCounter = 0;
-                        enemy.HP++;
+                        enemy.HP += Math.Sign(enemy.regenTime);
                     }
                 }
             }
@@ -213,11 +242,11 @@ public class Enemy : MoveableEntity
                 {
                     Rectangle newRect = new Rectangle
                     {
-                        X = Extensions.FloorToInt(enemy.position.X / (float)World.TileSize),
-                        Y = Extensions.FloorToInt(enemy.position.Y / (float)World.TileSize)
+                        X = MathUtil.FloorToInt(enemy.position.X / (float)World.TileSize),
+                        Y = MathUtil.FloorToInt(enemy.position.Y / (float)World.TileSize)
                     };
-                    newRect.Width = MathHelper.Max(1, Extensions.CeilToInt((enemy.position.X + enemy.Width) / (float)World.TileSize) - newRect.X);
-                    newRect.Height = MathHelper.Max(1, Extensions.CeilToInt((enemy.position.Y + enemy.Height) / (float)World.TileSize) - newRect.Y);
+                    newRect.Width = MathHelper.Max(1, MathUtil.CeilToInt((enemy.position.X + enemy.Width) / (float)World.TileSize) - newRect.X);
+                    newRect.Height = MathHelper.Max(1, MathUtil.CeilToInt((enemy.position.Y + enemy.Height) / (float)World.TileSize) - newRect.Y);
 
                     for(int x = newRect.X; x < newRect.X + newRect.Width; x++)
                     {
@@ -287,6 +316,14 @@ public class Enemy : MoveableEntity
         }
     }
 
+    public static void ClearAll()
+    {
+        for(int i = 0; i < enemies.Length; i++)
+        {
+            enemies[i] = null;
+        }
+    }
+
     void Remove()
     {
         markedForRemoval = true;
@@ -298,12 +335,12 @@ public class Enemy : MoveableEntity
         {
             if(enemy is null || !enemy.Active || enemy.markedForRemoval) continue;
 
-            if(Vector2.DistanceSquared(bbox.Center.ToVector2(), enemy.Hitbox.Center.ToVector2()) > 1024) continue;
+            if(Vector2.DistanceSquared(bbox.Center.ToVector2(), enemy.Center.ToVector2()) > 1024) continue;
 
-            if(bbox.Right <= enemy.Hitbox.Left) continue;
-            if(bbox.Bottom <= enemy.Hitbox.Top) continue;
-            if(bbox.Left >= enemy.Hitbox.Right) continue;
-            if(bbox.Top >= enemy.Hitbox.Bottom) continue;
+            if(bbox.Right <= enemy.Left.X) continue;
+            if(bbox.Bottom <= enemy.Top.Y) continue;
+            if(bbox.Left >= enemy.Right.X) continue;
+            if(bbox.Top >= enemy.Bottom.Y) continue;
 
             Main.World.NumCollisionChecks++;
             if(enemy.Hitbox.Intersects(bbox)) return enemy;
@@ -318,12 +355,12 @@ public class Enemy : MoveableEntity
         {
             if(enemy is null || !enemy.Active || enemy.markedForRemoval) continue;
 
-            if(Vector2.DistanceSquared(bbox.Center.ToVector2(), enemy.Hitbox.Center.ToVector2()) > 1024) continue;
+            if(Vector2.DistanceSquared(bbox.Center.ToVector2(), enemy.Center.ToVector2()) > 1024) continue;
 
-            if(bbox.Right <= enemy.Hitbox.Left) continue;
-            if(bbox.Bottom <= enemy.Hitbox.Top) continue;
-            if(bbox.Left >= enemy.Hitbox.Right) continue;
-            if(bbox.Top >= enemy.Hitbox.Bottom) continue;
+            if(bbox.Right <= enemy.Left.X) continue;
+            if(bbox.Bottom <= enemy.Top.Y) continue;
+            if(bbox.Left >= enemy.Right.X) continue;
+            if(bbox.Top >= enemy.Bottom.Y) continue;
 
             Main.World.NumCollisionChecks++;
             if(enemy.Hitbox.Intersects(bbox)) list.Add(enemy);

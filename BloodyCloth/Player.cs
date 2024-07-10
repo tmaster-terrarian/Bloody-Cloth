@@ -43,12 +43,15 @@ public class Player : MoveableEntity
     bool running;
 
     Point hitboxOffset = new(0, 5);
+    readonly RenderTarget2D renderTarget = new(Renderer.GraphicsDevice, Renderer.ScreenSize.X, Renderer.ScreenSize.Y);
+    readonly SpriteBatch spriteBatch = new(Renderer.GraphicsDevice);
 
     bool fxTrail;
     int fxTrailCounter;
     readonly List<AfterImage> afterImages = [];
 
     int bonusHp = 0;
+    int shieldIFrames = 0;
 
     readonly PlayerInputMapping inputMapping = new PlayerInputMapping {
         // rebind here with Name = MappedInput
@@ -80,12 +83,16 @@ public class Player : MoveableEntity
 
     public PlayerLoadout Loadout { get; private set; } = new();
 
+    public bool Dead { get; private set; }
+
     int testWeaponCooldown = 0;
 
     readonly List<Texture2D> textures = [];
     readonly List<int> frameCounts = [];
     int textureIndex;
     float frame;
+
+    Random nugdeRandom = new();
 
     enum TextureIndex
     {
@@ -150,6 +157,8 @@ public class Player : MoveableEntity
         if(onJumpthrough) OnGround = true;
         else OnGround = CheckColliding(BottomEdge.Shift(0, 1));
 
+        bool getPushedByEnemies = false;
+
         if(!wasOnGround && OnGround)
         {
             jumpCancelled = false;
@@ -183,6 +192,7 @@ public class Player : MoveableEntity
                 break;
             case PlayerState.Normal:
                 useGravity = true;
+                getPushedByEnemies = true;
 
                 if(inputDir != 0)
                 {
@@ -240,6 +250,8 @@ public class Player : MoveableEntity
                         onJumpthrough = CheckCollidingJumpthrough(BottomEdge.Shift(0, 1));
                         if(onJumpthrough) OnGround = true;
                         else OnGround = CheckColliding(BottomEdge.Shift(0, 1));
+
+                        getPushedByEnemies = false;
                     }
                 }
 
@@ -262,6 +274,9 @@ public class Player : MoveableEntity
                 break;
         }
 
+        if(!Dead && shieldIFrames > 0)
+            shieldIFrames--;
+
         if(!OnGround && useGravity)
         {
             if(velocity.Y >= 0.1)
@@ -270,6 +285,38 @@ public class Player : MoveableEntity
                 velocity.Y = MathUtil.Approach(velocity.Y, 20, gravity);
             else if (velocity.Y < 2)
                 velocity.Y = MathUtil.Approach(velocity.Y, 20, gravity * 0.25f);
+        }
+
+        if(getPushedByEnemies)
+        {
+            var e = Enemy.EnemyPlace(Hitbox);
+            if(e is not null && e.PushesPlayer)
+            {
+                int diffX = Center.X - e.Center.X;
+                diffX = diffX != 0 ? diffX : (nugdeRandom.Next(3) - 1);
+
+                if(e.PushesPlayer || e.PushedByPlayer)
+                {
+                    velocity.X += 0.08f * diffX * MathHelper.Max(1, e.Mass - 10);
+                    MoveX(Math.Sign(diffX), null);
+
+                    if(Bottom.Y <= e.Center.Y && velocity.Y >= 0)
+                    {
+                        velocity.Y -= 0.51f * MathHelper.Max(1, e.Mass - 10);
+                    }
+                }
+
+                if(e.PushedByPlayer)
+                {
+                    e.velocity.X += -0.08f * diffX * (MathHelper.Max(1, e.Mass - 10) / 4);
+                    e.MoveX(-Math.Sign(diffX), null);
+
+                    if(e.Bottom.Y <= Center.Y && e.velocity.Y >= 0)
+                    {
+                        e.velocity.Y -= 0.51f * (MathHelper.Max(1, e.Mass - 10) / 4);
+                    }
+                }
+            }
         }
 
         if(testWeaponCooldown > 0) testWeaponCooldown = MathUtil.Approach(testWeaponCooldown, 0, 1);
@@ -289,6 +336,7 @@ public class Player : MoveableEntity
             velocity.Y = 0;
             velocity.X = 0;
             Center = Main.WorldMousePosition;
+            getPushedByEnemies = false;
         }
 
         MoveX(velocity.X, () => {
@@ -385,6 +433,7 @@ public class Player : MoveableEntity
                     SpriteEffects.None,
                     ConvertDepth(LayerDepth + 1)
                 );
+
             }
 
             Renderer.SpriteBatch.Draw(
@@ -409,8 +458,8 @@ public class Player : MoveableEntity
                     X = this.position.X / World.TileSize,
                     Y = this.position.Y / World.TileSize
                 };
-                newRect.Width = MathHelper.Max(1, Extensions.CeilToInt((this.position.X + this.Width) / (float)World.TileSize) - newRect.X);
-                newRect.Height = MathHelper.Max(1, Extensions.CeilToInt((this.position.Y + this.Height) / (float)World.TileSize) - newRect.Y);
+                newRect.Width = MathHelper.Max(1, MathUtil.CeilToInt((this.position.X + this.Width) / (float)World.TileSize) - newRect.X);
+                newRect.Height = MathHelper.Max(1, MathUtil.CeilToInt((this.position.Y + this.Height) / (float)World.TileSize) - newRect.Y);
 
                 for(int x = newRect.X; x < newRect.X + newRect.Width; x++)
                 {
@@ -432,15 +481,23 @@ public class Player : MoveableEntity
             }
         }
 
+        Renderer.SpriteBatch.DrawLine(Center.ToVector2(), new(120, 60), Color.White);
+
         if(Visible)
         {
+            Vector2 renderTargetOffset = Main.Camera.Position;
+            Renderer.GraphicsDevice.SetRenderTarget(renderTarget);
+            Renderer.GraphicsDevice.Clear(Color.Transparent);
+
+            spriteBatch.Begin(SpriteSortMode.Immediate, samplerState: SamplerState.PointWrap);
+
             var texture = textures[textureIndex];
             int width = texture.Width / frameCounts[textureIndex];
             Rectangle drawFrame = new((int)frame * width, 0, width, texture.Height);
 
-            Renderer.SpriteBatch.Draw(
+            spriteBatch.Draw(
                 texture,
-                Center.ToVector2() - hitboxOffset.ToVector2(),
+                Center.ToVector2() - hitboxOffset.ToVector2() - renderTargetOffset,
                 drawFrame,
                 Color,
                 Rotation,
@@ -449,11 +506,34 @@ public class Player : MoveableEntity
                 Facing < 0 ? SpriteEffects.FlipHorizontally : SpriteEffects.None,
                 ConvertedLayerDepth
             );
+
+            spriteBatch.End();
+
+            Renderer.GraphicsDevice.SetRenderTarget(Renderer.RenderTarget);
+            Renderer.GraphicsDevice.Clear(Color.CornflowerBlue);
+
+            Renderer.SpriteBatch.Draw(renderTarget, renderTargetOffset, Color.White);
         }
 
         if(Main.Debug.Enabled)
         {
             NineSlice.DrawNineSlice(Main.LoadContent<Texture2D>("Images/Other/tileOutline"), Hitbox, null, new Point(1), new Point(1), Color.Red * 0.5f);
+        }
+    }
+
+    public void Hurt()
+    {
+        if(shieldIFrames > 0 || Dead) return;
+
+        if(bonusHp > 0)
+        {
+            bonusHp--;
+            shieldIFrames = 6;
+        }
+        else
+        {
+            Dead = true;
+            State = PlayerState.Dead;
         }
     }
 

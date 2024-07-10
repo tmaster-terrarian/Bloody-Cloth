@@ -104,9 +104,9 @@ public static class Renderer
         }
 
         GraphicsDevice.SetRenderTarget(UIRenderTarget);
-        GraphicsDevice.Clear(Color.Black * 0);
+        GraphicsDevice.Clear(Color.Transparent);
 
-        SpriteBatch.Base.Begin(SpriteSortMode.Deferred, samplerState: SamplerState.PointWrap);
+        SpriteBatch.Base.Begin(samplerState: SamplerState.PointWrap);
     }
 
     public static void EndDrawUI()
@@ -116,9 +116,9 @@ public static class Renderer
 
     public static void FinalizeDraw()
     {
-        SpriteBatch.Finalize(RenderTarget);
+        SpriteBatch.FinalizeDraw();
 
-        SpriteBatch.Base.Begin(SpriteSortMode.Deferred, samplerState: SamplerState.PointClamp);
+        SpriteBatch.Base.Begin(samplerState: SamplerState.PointClamp);
         SpriteBatch.Base.Draw(UIRenderTarget, Vector2.Zero, null, Color.White, 0, Vector2.Zero, PixelScale, SpriteEffects.None, 0);
         SpriteBatch.Base.End();
     }

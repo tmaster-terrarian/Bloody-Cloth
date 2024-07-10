@@ -17,12 +17,8 @@ public class Projectile : MoveableEntity
     private readonly ProjectileType defId;
     private bool markedForRemoval;
 
-    public bool hurtsEnemy;
-    public bool hurtsPlayer;
-    public float[] genericFloatValues = new float[4];
-    public int[] genericIntValues = new int[4];
-    public int frameNumber = 1;
-    public int frame;
+    public float[] GenericFloatValues { get; } = new float[4];
+    public int[] GenericIntValues { get; } = new int[4];
 
     public uint ID { get; private set; }
 
@@ -33,11 +29,14 @@ public class Projectile : MoveableEntity
     public int TimeLeft { get; set; } = 180;
 
     public bool Visible { get; set; } = true;
-    public int Alpha { get; set; } = 1;
+    public float Alpha { get; set; } = 1;
 
     public override bool Active => !markedForRemoval;
 
     public int Damage { get; set; } = 1;
+
+    public int FrameNumber { get; set; } = 1;
+    public int Frame { get; set; }
 
     public string TexturePath { get; set; }
 
@@ -179,11 +178,11 @@ public class Projectile : MoveableEntity
                 {
                     Rectangle newRect = new Rectangle
                     {
-                        X = Extensions.FloorToInt(projectile.position.X / (float)World.TileSize),
-                        Y = Extensions.FloorToInt(projectile.position.Y / (float)World.TileSize)
+                        X = MathUtil.FloorToInt(projectile.position.X / (float)World.TileSize),
+                        Y = MathUtil.FloorToInt(projectile.position.Y / (float)World.TileSize)
                     };
-                    newRect.Width = MathHelper.Max(1, Extensions.CeilToInt((projectile.position.X + projectile.Width) / (float)World.TileSize) - newRect.X);
-                    newRect.Height = MathHelper.Max(1, Extensions.CeilToInt((projectile.position.Y + projectile.Height) / (float)World.TileSize) - newRect.Y);
+                    newRect.Width = MathHelper.Max(1, MathUtil.CeilToInt((projectile.position.X + projectile.Width) / (float)World.TileSize) - newRect.X);
+                    newRect.Height = MathHelper.Max(1, MathUtil.CeilToInt((projectile.position.Y + projectile.Height) / (float)World.TileSize) - newRect.Y);
 
                     for(int x = newRect.X; x < newRect.X + newRect.Width; x++)
                     {
@@ -232,7 +231,7 @@ public class Projectile : MoveableEntity
             Defs.ProjectileDefs[this.defId].OnDestroy(this);
     }
 
-    public static void ClearProjectiles()
+    public static void ClearAll()
     {
         for(int i = 0; i < projectiles.Length; i++)
         {
@@ -277,6 +276,6 @@ public class Projectile : MoveableEntity
     public bool CanHurtPlayer(Player player = null)
     {
         player ??= Main.Player;
-        return !markedForRemoval && player.State != PlayerState.Dead && player.Active;
+        return !markedForRemoval && !player.Dead;
     }
 }

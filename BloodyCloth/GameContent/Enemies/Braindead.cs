@@ -9,16 +9,19 @@ namespace BloodyCloth.GameContent.Enemies;
 
 public class Braindead : EnemyDef
 {
-    public string TexturePath { get; set; }
+    public override void OnCreate(Enemy enemy)
+    {
+        base.OnCreate(enemy);
+    }
 
     public override void Update(Enemy enemy)
     {
-        // TODO: add gravity
-    }
+        CommonEnemyBehaviors.ApplyFriction(enemy);
+        CommonEnemyBehaviors.ApplyGravity(enemy);
 
-    public override void Draw(Enemy enemy)
-    {
-        var tex = Main.LoadContent<Texture2D>("Images/" + TexturePath);
-        Renderer.SpriteBatch.Draw(tex, enemy.Center.ToVector2(), null, Color.White, enemy.Rotation, new Vector2(tex.Width / 2f, tex.Height / 2f), enemy.DrawScale, SpriteEffects.None, enemy.ConvertedLayerDepth);
+        enemy.Pivot = new Vector2(enemy.Texture.Width, enemy.Texture.Height) / 2;
+        enemy.TextureVisualOffset = new(enemy.Width / 2, enemy.Height / 2);
+
+        base.Update(enemy);
     }
 }

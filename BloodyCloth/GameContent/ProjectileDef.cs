@@ -11,6 +11,7 @@ namespace BloodyCloth.GameContent;
 public class ProjectileDef : AbstractDef, IDealsDamageContentDef
 {
     public string TexturePath { get; set; }
+    public Point Size { get; set; } = new(8);
 
     public int Damage { get; set; } = 1;
     public bool CanHurtPlayer { get; set; }
@@ -19,6 +20,9 @@ public class ProjectileDef : AbstractDef, IDealsDamageContentDef
     public virtual void OnCreate(Projectile projectile)
     {
         projectile.TexturePath = TexturePath;
+        projectile.Width = Size.X;
+        projectile.Height = Size.Y;
+
         projectile.Damage = Damage;
     }
 
@@ -47,8 +51,8 @@ public class ProjectileDef : AbstractDef, IDealsDamageContentDef
 
     public virtual void Draw(Projectile projectile)
     {
-        int width = projectile.Texture.Width / projectile.frameNumber;
-        Rectangle srcRect = new(projectile.frame * width, 0, width, projectile.Texture.Height);
+        int width = projectile.Texture.Width / projectile.FrameNumber;
+        Rectangle srcRect = new(projectile.Frame * width, 0, width, projectile.Texture.Height);
 
         Renderer.SpriteBatch.Draw(
             projectile.Texture,
@@ -67,7 +71,9 @@ public class ProjectileDef : AbstractDef, IDealsDamageContentDef
 
     public virtual void OnHitEnemy(Projectile projectile, Enemy enemy)
     {
-        enemy.Hurt(projectile.Damage);
+        float dmg = enemy.Hurt(projectile.Damage);
+        Main.LastPlayerHitDamage = MathUtil.CeilToInt(dmg);
+
         projectile.Kill();
     }
 

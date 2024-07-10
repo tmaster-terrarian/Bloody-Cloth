@@ -3,6 +3,8 @@ using System.Collections.Generic;
 
 using Microsoft.Xna.Framework;
 
+using BloodyCloth.Utils;
+
 namespace BloodyCloth.Ecs.Components
 {
     [Serializable]
@@ -58,8 +60,8 @@ namespace BloodyCloth.Ecs.Components
         {
             xRemainder += x;
             yRemainder += y;   
-            int moveX = Extensions.RoundToInt(xRemainder);
-            int moveY = Extensions.RoundToInt(yRemainder);
+            int moveX = MathUtil.RoundToInt(xRemainder);
+            int moveY = MathUtil.RoundToInt(yRemainder);
             if(moveX != 0 || moveY != 0)
             {
                 // Loop through every Actor in the Level, add it to

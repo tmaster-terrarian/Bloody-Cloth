@@ -136,4 +136,19 @@ public static class MathUtil
     {
         return MathHelper.Min(Math.Abs(value), Math.Abs(min)) * Math.Sign(value);
     }
+
+    public static int RoundToInt(float value)
+    {
+        return (int)Math.Round(value);
+    }
+
+    public static int CeilToInt(float value)
+    {
+        return (int)Math.Ceiling(value);
+    }
+
+    public static int FloorToInt(float value)
+    {
+        return (int)Math.Floor(value);
+    }
 }

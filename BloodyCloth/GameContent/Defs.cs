@@ -63,6 +63,7 @@ public static class Defs
             TexturePath = "Enemies/dummy/idle",
             Invincible = true,
             MaxHP = 1000000,
+            Size = new(10, 24),
         });
     }
 }

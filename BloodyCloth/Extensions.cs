@@ -1,4 +1,5 @@
 using System;
+using BloodyCloth.Utils;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -27,21 +28,6 @@ public static class Extensions
         spriteBatch.DrawStringSpacesFix(font, text, position, color, spaceSize, 0, Vector2.Zero, Vector2.One, SpriteEffects.None, 0);
     }
 
-    public static int RoundToInt(float value)
-    {
-        return (int)Math.Round(value);
-    }
-
-    public static int CeilToInt(float value)
-    {
-        return (int)Math.Ceiling(value);
-    }
-
-    public static int FloorToInt(float value)
-    {
-        return (int)Math.Floor(value);
-    }
-
     public static int ToInt32(this bool value)
     {
         return value ? 1 : 0;
@@ -65,5 +51,65 @@ public static class Extensions
     public static float ToRotation(this Vector2 value)
     {
         return (float)Math.Atan2(value.Y, value.X);
+    }
+
+    public static Color Multiply(this Color value, float scale)
+    {
+        return Color.Multiply(value, scale);
+    }
+
+    public static Color Divide(this Color value, float scale)
+    {
+        return Color.Multiply(value, 1f/scale);
+    }
+
+    public static Color Multiply(this Color color, Color value)
+    {
+        Vector4 dest = new(color.ToVector3() / (color.A / 255f), color.A / 255f);
+        Vector4 src = new(value.ToVector3() / (value.A / 255f), value.A / 255f);
+
+        return new Color((src * dest) + (dest * 0f));
+    }
+
+    public static Color Divide(this Color color, Color value)
+    {
+        Vector4 dest = new(color.ToVector3() / (color.A / 255f), color.A / 255f);
+        Vector4 src = new(value.ToVector3() / (value.A / 255f), value.A / 255f);
+
+        return new Color((src / dest) + (dest * 0f));
+    }
+
+    public static Color Add(this Color color, Color value)
+    {
+        Vector4 dest = new(color.ToVector3() / (color.A / 255f), color.A / 255f);
+        Vector4 src = new(value.ToVector3() / (value.A / 255f), value.A / 255f);
+
+        return new Color((src * src.W) + (dest * dest.W));
+    }
+
+    public static Color Subtract(this Color color, Color value)
+    {
+        Vector4 dest = new(color.ToVector3() / (color.A / 255f), color.A / 255f);
+        Vector4 src = new(value.ToVector3() / (value.A / 255f), value.A / 255f);
+
+        return new Color(-(src * src.W) + (dest * dest.W));
+    }
+
+    public static Color AddPreserveAlpha(this Color color, Color value)
+    {
+        Vector3 dest = color.ToVector3() / (color.A / 255f);
+        Vector3 src = value.ToVector3() / (value.A / 255f);
+
+        Vector4 val = new((src * (value.A / 255f)) + dest, color.A / 255f);
+        return new Color(val);
+    }
+
+    public static Color SubtractPreserveAlpha(this Color color, Color value)
+    {
+        Vector3 dest = color.ToVector3() / (color.A / 255f);
+        Vector3 src = value.ToVector3() / (value.A / 255f);
+
+        Vector4 val = new(-(src * (value.A / 255f)) + dest, color.A / 255f);
+        return new Color(val);
     }
 }

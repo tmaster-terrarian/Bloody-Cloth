@@ -241,10 +241,10 @@ public class World : IDisposable
         Rectangle[,] cols = Collisions;
 
         Rectangle newRect = rect;
-        newRect.X = Extensions.FloorToInt(rect.X / (float)TileSize);
-        newRect.Y = Extensions.FloorToInt(rect.Y / (float)TileSize);
-        newRect.Width = MathHelper.Max(1, Extensions.CeilToInt((rect.X + rect.Width) / (float)TileSize) - newRect.X);
-        newRect.Height = MathHelper.Max(1, Extensions.CeilToInt((rect.Y + rect.Height) / (float)TileSize) - newRect.Y);
+        newRect.X = MathUtil.FloorToInt(rect.X / (float)TileSize);
+        newRect.Y = MathUtil.FloorToInt(rect.Y / (float)TileSize);
+        newRect.Width = MathHelper.Max(1, MathUtil.CeilToInt((rect.X + rect.Width) / (float)TileSize) - newRect.X);
+        newRect.Height = MathHelper.Max(1, MathUtil.CeilToInt((rect.Y + rect.Height) / (float)TileSize) - newRect.Y);
 
         for(int x = newRect.X; x < newRect.X + newRect.Width; x++)
         {

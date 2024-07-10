@@ -10,9 +10,9 @@ public abstract class Entity
 
 	int _depth = 0;
 
-	protected Point position;
 	protected Vector2 drawScale = Vector2.One;
 
+	public Point position;
 	public Vector2 velocity;
 
 	/// <summary>
@@ -32,8 +32,8 @@ public abstract class Entity
 
     public Color Color { get; set; } = Color.White;
 
-	public int Width { get; protected set; } = 8;
-	public int Height { get; protected set; } = 8;
+	public int Width { get; set; } = 8;
+	public int Height { get; set; } = 8;
 
 	public Vector2 DrawScale => drawScale;
 

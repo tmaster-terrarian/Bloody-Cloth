@@ -1,22 +1,19 @@
 ﻿using System;
-using System.IO;
+using System.Collections.Generic;
+using System.Text.Json;
 
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
-using LDtk;
-
-using BloodyCloth.Ecs.Components;
-using BloodyCloth.IO;
-using LDtk.Renderer;
-using System.Collections.Generic;
-using System.Text.Json.Nodes;
-using System.Text.Json;
-using BloodyCloth.Graphics;
 using BloodyCloth.GameContent;
+using BloodyCloth.Graphics;
+using BloodyCloth.IO;
+
 using Coroutines;
+
+using LDtk;
+using LDtk.Renderer;
 
 namespace BloodyCloth;
 
@@ -29,7 +26,8 @@ public class Main : Game
     static Logger _logger = new();
     static World _world;
     static Camera _camera;
-    static CoroutineRunner _coroutineRunner = new();
+    static readonly CoroutineRunner _coroutineRunner = new();
+    static readonly CoroutineRunner _graphicsCoroutineRunner = new();
 
     static LDtkFile lDtkFile;
     static LDtkWorld lDtkWorld;
@@ -40,6 +38,7 @@ public class Main : Game
     public static World World => _world;
     public static Camera Camera => _camera;
     public static CoroutineRunner Coroutines => _coroutineRunner;
+    public static CoroutineRunner GraphicsCoroutines => _graphicsCoroutineRunner;
 
     public static Point MousePosition => new(Mouse.GetState().X / Renderer.PixelScale, Mouse.GetState().Y / Renderer.PixelScale);
     public static Point MousePositionClamped => new(MathHelper.Clamp(Mouse.GetState().X / Renderer.PixelScale, 0, ScreenSize.X - 1), MathHelper.Clamp(Mouse.GetState().Y / Renderer.PixelScale, 0, ScreenSize.Y - 1));
@@ -58,20 +57,25 @@ public class Main : Game
 
     public static int RoomIndex { get; private set; }
 
+    public static int LastPlayerHitDamage { get; set; }
+    public static uint LastPlayerHitTarget { get; set; }
+
     public static class AppMetadata
     {
         public const string Name = "BloodyCloth";
-        public const string Version = "0.1.0.5";
-        public const int Build = 5;
+        public const string Version = "0.1.0.0";
+        public const int Build = 1;
     }
 
     static bool debugMode;
     static bool drawTileCheckingAreas;
+    static bool drawLevelPadding;
 
     public static class Debug
     {
         public static bool Enabled => debugMode;
         public static bool DrawTileCheckingAreas => drawTileCheckingAreas;
+        public static bool DrawLevelPadding => drawLevelPadding;
     }
 
     public Main()
@@ -122,8 +126,6 @@ public class Main : Game
 
         NextRoom(0);
 
-        var dummy = Enemy.CreateDirect(EnemyType.Dummy, new(24, 48), Vector2.Zero);
-
         _logger.LogInfo(new PathBuilder{AppendFinalSeparator = true}.Create(PathBuilder.LocalAppdataPath, AppMetadata.Name));
         _logger.LogInfo(AppMetadata.Version);
         _logger.LogInfo(ProgramPath);
@@ -161,6 +163,20 @@ public class Main : Game
                     new(e.Px + new Point(layer._PxTotalOffsetX, layer._PxTotalOffsetY), new(e.Width, e.Height))
                 );
             }
+
+            if(e._Identifier == "Enemy")
+            {
+                var enemy = Enemy.CreateDirect(
+                    (EnemyType)((JsonElement)e.FieldInstances[0]._Value).GetInt32(),
+                    e.Px + new Point(layer._PxTotalOffsetX, layer._PxTotalOffsetY),
+                    Vector2.Zero
+                );
+
+                if(enemy is not null)
+                {
+                    enemy.Bottom = e.Px + new Point(layer._PxTotalOffsetX, layer._PxTotalOffsetY);
+                }
+            }
         }
 
         layer = level.LayerInstances[1];
@@ -193,12 +209,15 @@ public class Main : Game
     {
         if(room < 0) room = RoomIndex + 1;
 
-        Projectile.ClearProjectiles();
-        Trigger.ClearTriggers();
+        Projectile.ClearAll();
+        Trigger.ClearAll();
+        Enemy.ClearAll();
 
         RoomIndex = room;
 
         LoadLevel(lDtkWorld.Levels[RoomIndex]);
+
+        var dummy = Enemy.CreateDirect(EnemyType.Dummy, new(24, 48), Vector2.Zero);
     }
 
     protected override void Update(GameTime gameTime)
@@ -222,6 +241,10 @@ public class Main : Game
             }
             if(Input.GetPressed(Keys.F3))
             {
+                drawLevelPadding = !drawLevelPadding;
+            }
+            if(Input.GetPressed(Keys.F4))
+            {
                 NextRoom(0);
             }
         }
@@ -236,16 +259,28 @@ public class Main : Game
 
         Player.Update();
 
-        Trigger.Update();
-
         Projectile.Update();
 
         Enemy.Update();
 
-        _camera.Zoom = 1;
-        _camera.Position += (Player.Center.ToVector2() + new Vector2(-ScreenSize.X / 2f, -ScreenSize.Y / 2f) - _camera.Position) / 4f;
-        _camera.Position = Vector2.Clamp(_camera.Position, Vector2.Zero, (World.Bounds.Size.ToVector2() * World.TileSize) - ScreenSize.ToVector2());
-        _camera.Update();
+        Trigger.Update();
+
+        Camera.Zoom = 1;
+        Camera.Position += (Player.Center.ToVector2() + new Vector2(-ScreenSize.X / 2f, -ScreenSize.Y / 2f) - Camera.Position) / 4f;
+
+        Vector2 padding = new Vector2(World.TileSize, 0);
+        Vector2 min = padding;
+        Vector2 max = (World.Bounds.Size.ToVector2() * World.TileSize) - ScreenSize.ToVector2() - Vector2.UnitY * (_world.Height <= 23 ? (World.TileSize / 2) : 0) - padding;
+
+        if(drawLevelPadding && debugMode)
+        {
+            min -= padding;
+            max += padding;
+        }
+
+        Camera.Position = Vector2.Clamp(Camera.Position, min, max);
+
+        Camera.Update();
 
         ElapsedTime++;
 
@@ -266,15 +301,34 @@ public class Main : Game
 
         Player.Draw();
 
+        if(debugMode && drawLevelPadding)
+        {
+            Renderer.SpriteBatch.Base.Draw(OnePixel, new Rectangle(0, 0, World.TileSize, World.TileSize * World.Height), Color.Red * 0.25f);
+            Renderer.SpriteBatch.Base.Draw(OnePixel, new Rectangle((World.TileSize * World.Width) - World.TileSize, 0, World.TileSize, World.TileSize * World.Height), Color.Red * 0.25f);
+        }
+
         Trigger.Draw();
 
         Renderer.EndDraw();
         Renderer.BeginDrawUI();
 
-        Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFontBold, $"{ScreenSize.X}x{ScreenSize.Y}*{Renderer.PixelScale}", new Vector2(10, ScreenSize.Y - 10), Color.White, 4, 0, Vector2.UnitY * 14, 1);
-        Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{MousePosition.X}, {MousePosition.Y}", new Vector2(10, ScreenSize.Y - 20), Color.White, 4, 0, Vector2.UnitY * 14, 1);
+        _graphicsCoroutineRunner.Update(1/60f);
 
-        Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"col checks: {_world.NumCollisionChecks}", new Vector2(128, ScreenSize.Y - 10), Color.White, 4, 0, Vector2.UnitY * 14, 1);
+        if(Debug.Enabled)
+        {
+            static void DrawTexts(Vector2 offset, Color color)
+            {
+                Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFontBold, $"{ScreenSize.X}x{ScreenSize.Y}*{Renderer.PixelScale}", new Vector2(10, ScreenSize.Y - 10) + offset, color, 4, 0, Vector2.UnitY * 12, 1);
+                Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{MousePosition.X}, {MousePosition.Y}", new Vector2(10, ScreenSize.Y - 20) + offset, color, 4, 0, Vector2.UnitY * 12, 1);
+
+                Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{_world.NumCollisionChecks}", new Vector2(128, ScreenSize.Y - 10) + offset, color.SubtractPreserveAlpha(Color.HotPink), 4, 0, Vector2.UnitY * 12, 1);
+
+                Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{LastPlayerHitDamage}", new Vector2(96, ScreenSize.Y - 10) + offset, color, 4, 0, Vector2.UnitY * 12, 1);
+            }
+
+            DrawTexts(Vector2.One, Color.Black);
+            DrawTexts(Vector2.Zero, Color.White);
+        }
 
         Renderer.EndDrawUI();
         Renderer.FinalizeDraw();
