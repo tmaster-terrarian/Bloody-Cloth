@@ -321,14 +321,22 @@ public class Main : Game
                 Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFontBold, $"{ScreenSize.X}x{ScreenSize.Y}*{Renderer.PixelScale}", new Vector2(10, ScreenSize.Y - 10) + offset, color, 4, 0, Vector2.UnitY * 12, 1);
                 Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{MousePosition.X}, {MousePosition.Y}", new Vector2(10, ScreenSize.Y - 20) + offset, color, 4, 0, Vector2.UnitY * 12, 1);
 
-                Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{_world.NumCollisionChecks}", new Vector2(128, ScreenSize.Y - 10) + offset, color.SubtractPreserveAlpha(Color.HotPink), 4, 0, Vector2.UnitY * 12, 1);
+                Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{_world.NumCollisionChecks}", new Vector2(128, ScreenSize.Y - 10) + offset, color.Subtract(Color.White), 4, 0, Vector2.UnitY * 12, 1);
 
                 Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{LastPlayerHitDamage}", new Vector2(96, ScreenSize.Y - 10) + offset, color, 4, 0, Vector2.UnitY * 12, 1);
             }
 
-            DrawTexts(Vector2.One, Color.Black);
+            DrawTexts(Vector2.One, Color.Black * 0.5f);
             DrawTexts(Vector2.Zero, Color.White);
         }
+
+        Color col1 = new Color(100, 150, 200) * 1f;
+        Color col2 = new Color(100, 100, 100) * (100f / 255f);
+        Color blend = col1.AddPreserveAlpha(Color.Transparent);
+
+        Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{col1}", new Vector2(144, ScreenSize.Y - 30), col1, 4, 0, Vector2.UnitY * 12);
+        Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{col2}", new Vector2(144, ScreenSize.Y - 20), col2, 4, 0, Vector2.UnitY * 12);
+        Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{blend}", new Vector2(144, ScreenSize.Y - 10), blend, 4, 0, Vector2.UnitY * 12);
 
         Renderer.EndDrawUI();
         Renderer.FinalizeDraw();

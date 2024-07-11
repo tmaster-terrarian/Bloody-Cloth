@@ -33,6 +33,8 @@ public class Player : MoveableEntity
     readonly float baseAirAcceleration = 0.07f;
     readonly float baseAirFriction = 0.05f;
 
+    Vector2 renderTargetOffset = Main.Camera.Position;
+
     float moveSpeed;
     float jumpSpeed;
     float accel;
@@ -43,8 +45,7 @@ public class Player : MoveableEntity
     bool running;
 
     Point hitboxOffset = new(0, 5);
-    readonly RenderTarget2D renderTarget = new(Renderer.GraphicsDevice, Renderer.ScreenSize.X, Renderer.ScreenSize.Y);
-    readonly SpriteBatch spriteBatch = new(Renderer.GraphicsDevice);
+    readonly RenderTarget2D renderTarget;
 
     bool fxTrail;
     int fxTrailCounter;
@@ -114,6 +115,8 @@ public class Player : MoveableEntity
 
         addTex("idle");
         addTex("run", 6);
+
+        renderTarget = new(Renderer.GraphicsDevice, Renderer.ScreenSize.X, Renderer.ScreenSize.Y);
     }
 
     void AddTexture(Texture2D texture, int frameCount = 1)
@@ -379,6 +382,35 @@ public class Player : MoveableEntity
                 i--;
             }
         }
+
+        #region pre-draw setup
+
+        renderTargetOffset = Main.Camera.Position;
+
+        Renderer.GraphicsDevice.SetRenderTarget(renderTarget);
+        Renderer.GraphicsDevice.Clear(Color.Transparent);
+        Renderer.SpriteBatch.Base.Begin(SpriteSortMode.Immediate, samplerState: SamplerState.PointWrap);
+
+        var texture = textures[textureIndex];
+        int width = texture.Width / frameCounts[textureIndex];
+        Rectangle drawFrame = new((int)frame * width, 0, width, texture.Height);
+
+        Renderer.SpriteBatch.Base.Draw(
+            texture,
+            Center.ToVector2() - hitboxOffset.ToVector2() - renderTargetOffset,
+            drawFrame,
+            Color,
+            Rotation,
+            new Vector2(width / 2, texture.Height / 2),
+            drawScale,
+            Facing < 0 ? SpriteEffects.FlipHorizontally : SpriteEffects.None,
+            ConvertedLayerDepth
+        );
+
+        Renderer.SpriteBatch.Base.End();
+        Renderer.GraphicsDevice.SetRenderTarget(null);
+
+        #endregion
     }
 
     private void RecalculateStats()
@@ -418,7 +450,7 @@ public class Player : MoveableEntity
 
             var texture = textures[image.TextureIndex];
             int width = texture.Width / frameCounts[image.TextureIndex];
-            Rectangle drawFrame2 = new(image.Frame * width, 0, width, texture.Height);
+            Rectangle drawFrame = new(image.Frame * width, 0, width, texture.Height);
 
             if(Main.Debug.Enabled)
             {
@@ -433,13 +465,12 @@ public class Player : MoveableEntity
                     SpriteEffects.None,
                     ConvertDepth(LayerDepth + 1)
                 );
-
             }
 
             Renderer.SpriteBatch.Draw(
                 texture,
                 (image.Position + new Point(this.Width / 2, this.Height / 2)).ToVector2() - hitboxOffset.ToVector2(),
-                drawFrame2,
+                drawFrame,
                 image.Color * (image.Alpha * 0.5f),
                 image.Rotation,
                 new Vector2(width / 2, texture.Height / 2),
@@ -485,33 +516,6 @@ public class Player : MoveableEntity
 
         if(Visible)
         {
-            Vector2 renderTargetOffset = Main.Camera.Position;
-            Renderer.GraphicsDevice.SetRenderTarget(renderTarget);
-            Renderer.GraphicsDevice.Clear(Color.Transparent);
-
-            spriteBatch.Begin(SpriteSortMode.Immediate, samplerState: SamplerState.PointWrap);
-
-            var texture = textures[textureIndex];
-            int width = texture.Width / frameCounts[textureIndex];
-            Rectangle drawFrame = new((int)frame * width, 0, width, texture.Height);
-
-            spriteBatch.Draw(
-                texture,
-                Center.ToVector2() - hitboxOffset.ToVector2() - renderTargetOffset,
-                drawFrame,
-                Color,
-                Rotation,
-                new Vector2(width / 2, texture.Height / 2),
-                drawScale,
-                Facing < 0 ? SpriteEffects.FlipHorizontally : SpriteEffects.None,
-                ConvertedLayerDepth
-            );
-
-            spriteBatch.End();
-
-            Renderer.GraphicsDevice.SetRenderTarget(Renderer.RenderTarget);
-            Renderer.GraphicsDevice.Clear(Color.CornflowerBlue);
-
             Renderer.SpriteBatch.Draw(renderTarget, renderTargetOffset, Color.White);
         }
 

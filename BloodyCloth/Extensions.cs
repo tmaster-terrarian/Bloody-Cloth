@@ -18,7 +18,7 @@ public static class Extensions
         }
     }
 
-    public static void DrawStringSpacesFix(this SpriteBatch spriteBatch, SpriteFont font, string text, Vector2 position, Color color, int spaceSize, float rotation, Vector2 origin, float scale, SpriteEffects effects = SpriteEffects.None, float layerDepth = 0, bool rtl = false)
+    public static void DrawStringSpacesFix(this SpriteBatch spriteBatch, SpriteFont font, string text, Vector2 position, Color color, int spaceSize, float rotation, Vector2 origin, float scale = 1, SpriteEffects effects = SpriteEffects.None, float layerDepth = 0, bool rtl = false)
     {
         spriteBatch.DrawStringSpacesFix(font, text, position, color, spaceSize, rotation, origin, new Vector2(scale), effects, layerDepth, rtl);
     }
@@ -73,43 +73,83 @@ public static class Extensions
 
     public static Color Divide(this Color color, Color value)
     {
-        Vector4 dest = new(color.ToVector3() / (color.A / 255f), color.A / 255f);
-        Vector4 src = new(value.ToVector3() / (value.A / 255f), value.A / 255f);
+        float destA = color.ToVector4().W;
+        float srcA = value.ToVector4().W;
+        Vector3 dest = color.ToVector3() / destA;
+        Vector3 src = value.ToVector3() / srcA;
 
         return new Color((src / dest) + (dest * 0f));
     }
 
     public static Color Add(this Color color, Color value)
     {
-        Vector4 dest = new(color.ToVector3() / (color.A / 255f), color.A / 255f);
-        Vector4 src = new(value.ToVector3() / (value.A / 255f), value.A / 255f);
+        float destA = color.ToVector4().W;
+        float srcA = value.ToVector4().W;
+        Vector4 dest = new(color.ToVector3() / destA, destA);
+        Vector4 src = new(value.ToVector3() / srcA, srcA);
+        if(color.A == 0)
+        {
+            dest = Vector4.Zero;
+        }
+        if(value.A == 0)
+        {
+            src = Vector4.Zero;
+        }
 
-        return new Color((src * src.W) + (dest * dest.W));
+        return Color.FromNonPremultiplied(dest + (src * srcA));
     }
 
     public static Color Subtract(this Color color, Color value)
     {
-        Vector4 dest = new(color.ToVector3() / (color.A / 255f), color.A / 255f);
-        Vector4 src = new(value.ToVector3() / (value.A / 255f), value.A / 255f);
+        float destA = color.ToVector4().W;
+        float srcA = value.ToVector4().W;
+        Vector4 dest = new(color.ToVector3() / destA, destA);
+        Vector4 src = new(value.ToVector3() / srcA, srcA);
+        if(color.A == 0)
+        {
+            dest = Vector4.Zero;
+        }
+        if(value.A == 0)
+        {
+            src = Vector4.Zero;
+        }
 
-        return new Color(-(src * src.W) + (dest * dest.W));
+        return Color.FromNonPremultiplied(dest - (src * srcA));
     }
 
     public static Color AddPreserveAlpha(this Color color, Color value)
     {
-        Vector3 dest = color.ToVector3() / (color.A / 255f);
-        Vector3 src = value.ToVector3() / (value.A / 255f);
+        float destA = color.ToVector4().W;
+        float srcA = value.ToVector4().W;
+        Vector3 dest = color.ToVector3() / destA;
+        Vector3 src = value.ToVector3() / srcA;
+        if(color.A == 0)
+        {
+            dest = Vector3.Zero;
+        }
+        if(value.A == 0)
+        {
+            src = Vector3.Zero;
+        }
 
-        Vector4 val = new((src * (value.A / 255f)) + dest, color.A / 255f);
-        return new Color(val);
+        return new Color((src * srcA) + dest) * destA;
     }
 
     public static Color SubtractPreserveAlpha(this Color color, Color value)
     {
-        Vector3 dest = color.ToVector3() / (color.A / 255f);
-        Vector3 src = value.ToVector3() / (value.A / 255f);
+        float destA = color.ToVector4().W;
+        float srcA = value.ToVector4().W;
+        Vector3 dest = color.ToVector3() / destA;
+        Vector3 src = value.ToVector3() / srcA;
+        if(color.A == 0)
+        {
+            dest = Vector3.Zero;
+        }
+        if(value.A == 0)
+        {
+            src = Vector3.Zero;
+        }
 
-        Vector4 val = new(-(src * (value.A / 255f)) + dest, color.A / 255f);
-        return new Color(val);
+        return new Color(-(src * srcA) + dest) * destA;
     }
 }
