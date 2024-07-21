@@ -512,8 +512,6 @@ public class Player : MoveableEntity
             }
         }
 
-        Renderer.SpriteBatch.DrawLine(Center.ToVector2(), new(120, 60), Color.White);
-
         if(Visible)
         {
             Renderer.SpriteBatch.Draw(renderTarget, renderTargetOffset, Color.White);
@@ -532,7 +530,10 @@ public class Player : MoveableEntity
         if(bonusHp > 0)
         {
             bonusHp--;
-            shieldIFrames = 6;
+            if(bonusHp == 0)
+            {
+                shieldIFrames = 6;
+            }
         }
         else
         {
@@ -543,7 +544,7 @@ public class Player : MoveableEntity
 
     public bool IsRiding(Ecs.Components.Solid solid)
     {
-        return solid.Collidable && Hitbox.Shift(new Point(0, 1)).Intersects(solid.WorldBoundingBox);
+        return solid.Collidable && solid.Intersects(Hitbox.Shift(new Point(0, 1)));
     }
 
     public void Squish()

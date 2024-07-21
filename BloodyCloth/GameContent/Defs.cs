@@ -51,7 +51,7 @@ public static class Defs
             Name = "NextRoom",
             TriggerOnce = true,
             OnEnter = (Trigger trigger) => {
-                Main.NextRoom();
+                Main.FadeToNextRoom(-1, Main.FadeType.Beno);
             },
         });
     }

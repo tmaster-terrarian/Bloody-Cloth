@@ -14,6 +14,8 @@ using Coroutines;
 
 using LDtk;
 using LDtk.Renderer;
+using System.Collections;
+using BloodyCloth.Utils;
 
 namespace BloodyCloth;
 
@@ -27,7 +29,6 @@ public class Main : Game
     static World _world;
     static Camera _camera;
     static readonly CoroutineRunner _coroutineRunner = new();
-    static readonly CoroutineRunner _graphicsCoroutineRunner = new();
 
     static LDtkFile lDtkFile;
     static LDtkWorld lDtkWorld;
@@ -38,7 +39,6 @@ public class Main : Game
     public static World World => _world;
     public static Camera Camera => _camera;
     public static CoroutineRunner Coroutines => _coroutineRunner;
-    public static CoroutineRunner GraphicsCoroutines => _graphicsCoroutineRunner;
 
     public static Point MousePosition => new(Mouse.GetState().X / Renderer.PixelScale, Mouse.GetState().Y / Renderer.PixelScale);
     public static Point MousePositionClamped => new(MathHelper.Clamp(Mouse.GetState().X / Renderer.PixelScale, 0, ScreenSize.X - 1), MathHelper.Clamp(Mouse.GetState().Y / Renderer.PixelScale, 0, ScreenSize.Y - 1));
@@ -67,7 +67,12 @@ public class Main : Game
         public const int Build = 1;
     }
 
-    static bool debugMode;
+#if DEBUG
+    static bool debugMode = true;
+#else
+    static bool debugMode = false;
+#endif
+
     static bool drawTileCheckingAreas;
     static bool drawLevelPadding;
 
@@ -102,7 +107,7 @@ public class Main : Game
     protected override void Initialize()
     {
         OnePixel = new Texture2D(GraphicsDevice, 1, 1);
-        OnePixel.SetData((byte[])[ 0xFF, 0xFF, 0xFF, 0xFF ]);
+        OnePixel.SetData<byte>([ 0xFF, 0xFF, 0xFF, 0xFF ]);
 
         Renderer.Initialize(_graphics, GraphicsDevice, Window);
 
@@ -138,6 +143,200 @@ public class Main : Game
         Defs.Initialize();
 
         Player = new Player();
+    }
+
+    protected override void Update(GameTime gameTime)
+    {
+        Input.RefreshKeyboardState();
+        Input.RefreshGamePadState(PlayerIndex.One);
+        Input.RefreshMouseState();
+
+        _coroutineRunner.Update(1/60f);
+
+        if(Input.GetPressed(Keys.F1))
+        {
+            debugMode = !debugMode;
+        }
+
+        if(debugMode)
+        {
+            if(Input.GetPressed(Keys.F2))
+            {
+                drawTileCheckingAreas = !drawTileCheckingAreas;
+            }
+            if(Input.GetPressed(Keys.F3))
+            {
+                drawLevelPadding = !drawLevelPadding;
+            }
+            if(Input.GetPressed(Keys.F4))
+            {
+                FadeToNextRoom(0, FadeType.Throwback);
+            }
+        }
+
+        if(Input.GetPressed(Buttons.Back, PlayerIndex.One) || Input.GetPressed(Keys.Escape))
+            Exit();
+
+        _world.NumCollisionChecks = 0;
+        _world.Update();
+
+        Pickup.Update();
+
+        Player.Update();
+
+        Projectile.Update();
+
+        Enemy.Update();
+
+        Trigger.Update();
+
+        Camera.Zoom = 1;
+        Camera.Position += (Player.Center.ToVector2() + new Vector2(-ScreenSize.X / 2f, -ScreenSize.Y / 2f) - Camera.Position) / 4f;
+
+        Vector2 padding = new Vector2(World.TileSize, 0);
+        Vector2 min = padding;
+        Vector2 max = (World.Bounds.Size.ToVector2() * World.TileSize) - ScreenSize.ToVector2() - Vector2.UnitY * (_world.Height <= 23 ? (World.TileSize / 2) : 0) - padding;
+
+        if(drawLevelPadding && debugMode)
+        {
+            min -= padding;
+            max += padding;
+        }
+
+        Camera.Position = Vector2.Clamp(Camera.Position, min, max);
+
+        Camera.Update();
+
+        ElapsedTime++;
+
+        base.Update(gameTime);
+    }
+
+    int fpsCounter = 0;
+
+    protected override void Draw(GameTime gameTime)
+    {
+        Renderer.BeginDraw(SamplerState.PointWrap, _camera.Transform);
+
+        lDtkRenderer.RenderPrerenderedLevel(lDtkWorld.Levels[RoomIndex]);
+
+        _world.Draw();
+
+        Projectile.Draw();
+
+        Enemy.Draw();
+
+        Player.Draw();
+
+        if(debugMode && drawLevelPadding)
+        {
+            Renderer.SpriteBatch.Base.Draw(OnePixel, new Rectangle(0, 0, World.TileSize, World.TileSize * World.Height), Color.Red * 0.25f);
+            Renderer.SpriteBatch.Base.Draw(OnePixel, new Rectangle((World.TileSize * World.Width) - World.TileSize, 0, World.TileSize, World.TileSize * World.Height), Color.Red * 0.25f);
+        }
+
+        Trigger.Draw();
+
+        Renderer.EndDraw();
+        Renderer.BeginDrawUI();
+
+        // HUD
+
+        if(transitionProgress > 0)
+        {
+            int w = ScreenSize.X;
+            int h = ScreenSize.Y;
+            Random r = new(1984);
+            switch(fadeType)
+            {
+                case FadeType.Basic:
+                    Renderer.SpriteBatch.Base.Draw(OnePixel, new Rectangle(Point.Zero, ScreenSize), Color.Black * transitionProgress);
+                    break;
+                case FadeType.Throwback:
+                    float p = transitionProgress;
+                    Renderer.SpriteBatch.Base.Draw(OnePixel, new Rectangle(0, 0, w, (int)(h / 2 * p)), Color.Black); // top
+                    Renderer.SpriteBatch.Base.Draw(OnePixel, new Rectangle(0, h - (int)(h / 2 * p), w, (int)(h / 2 * p)), Color.Black); // bottom
+                    Renderer.SpriteBatch.Base.Draw(OnePixel, new Rectangle(0, 0, (int)(w / 2 * p), h), Color.Black); // left
+                    Renderer.SpriteBatch.Base.Draw(OnePixel, new Rectangle(w - (int)(w / 2 * p), 0, (int)(w / 2 * p), h), Color.Black); // right
+                    break;
+                case FadeType.Wide:
+                    Renderer.SpriteBatch.Base.Draw(OnePixel, new Rectangle(0, 0, w, (int)(h / 2 * transitionProgress)), Color.Black); // top
+                    Renderer.SpriteBatch.Base.Draw(OnePixel, new Rectangle(0, h - (int)(h / 2 * transitionProgress), w, (int)(h / 2 * transitionProgress)), Color.Black); // bottom
+                    break;
+                case FadeType.LaggyCircle:
+                    Vector2 center = (Player?.Center.ToVector2() - Camera?.Position) ?? (ScreenSize.ToVector2() / 2);
+                    for(int x = -6; x < w + 6; x += 3)
+                    {
+                        for(int y = -6; y < h + 6; y += 3)
+                        {
+                            Vector2 pos = new(x, y);
+                            float radiusSqr = MathUtil.Sqr(650 * (1 - transitionProgress));
+                            float diff = (pos - center).LengthSquared() - radiusSqr;
+                            if(diff < 0) continue;
+                            float mul = 1;
+                            if(diff < 1)
+                                mul = diff;
+                            Renderer.SpriteBatch.Base.Draw(OnePixel, pos + Vector2.One * 6, null, Color.Black * ((diff >= 0).ToInt32() * mul), (center - (pos + (Vector2.One * 6))).ToRotation(), Vector2.One * 0.5f, new Vector2(6, 12), SpriteEffects.None, 0);
+                        }
+                    }
+                    break;
+                case FadeType.Beno:
+                    if(transitionDirection == 1)
+                    {
+                        Renderer.SpriteBatch.Base.Draw(OnePixel, new Rectangle(w - (int)(w * transitionProgress * 1.1f), 0, (int)(w * 1.1f), h), Color.Black);
+                    }
+                    else
+                    {
+                        Renderer.SpriteBatch.Base.Draw(OnePixel, new Rectangle(0, 0, (int)(w * transitionProgress), h), Color.Black);
+                    }
+                    break;
+                case FadeType.VerticalBars:
+                    if(transitionDirection == 1)
+                    {
+                        int w2 = MathUtil.CeilToInt(w / 6f);
+                        for(int i = 0; i < 6; i++)
+                        {
+                            Renderer.SpriteBatch.Base.Draw(OnePixel, new Rectangle(w2 * i, 0, w2, (int)(h * (transitionProgress * 2 - (i / 12f) - 0.5f))), Color.Black);
+                        }
+                    }
+                    else
+                    {
+                        int w2 = MathUtil.CeilToInt(w / 6f);
+                        for(int i = 0; i < 6; i++)
+                        {
+                            Renderer.SpriteBatch.Base.Draw(OnePixel, new Rectangle(w2 * i, h - (int)(h * (transitionProgress * 2 + (i / 12f) - 0.5f)), w2, (int)(h * (transitionProgress * 2 + (i / 12f) - 0.5f))), Color.Black);
+                        }
+                    }
+                    break;
+            }
+        }
+
+        if(Debug.Enabled)
+        {
+            static void DrawTexts(Vector2 offset, Color color)
+            {
+                Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFontBold, $"{ScreenSize.X}x{ScreenSize.Y}*{Renderer.PixelScale}", new Vector2(10, ScreenSize.Y - 10) + offset, color, 4, 0, Vector2.UnitY * 12, 1);
+
+                Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{MousePosition.X}, {MousePosition.Y}", new Vector2(10, ScreenSize.Y - 20) + offset, color, 4, 0, Vector2.UnitY * 12, 1);
+
+                Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{_world.NumCollisionChecks}", new Vector2(128, ScreenSize.Y - 10) + offset, color, 4, 0, Vector2.UnitY * 12, 1);
+
+                Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{LastPlayerHitDamage}", new Vector2(96, ScreenSize.Y - 10) + offset, color, 4, 0, Vector2.UnitY * 12, 1);
+            }
+
+            DrawTexts(Vector2.One, Color.Black * 0.5f);
+            DrawTexts(Vector2.Zero, Color.White);
+        }
+
+        fpsCounter++;
+        if(fpsCounter >= 15)
+        {
+            Window.Title = $"Bloody Cloth {AppMetadata.Version} [{fpsCounter * 4} FPS @ {(GC.GetTotalMemory(false) / 1048576f).ToString("F")} MB]";
+            fpsCounter = 0;
+        }
+
+        Renderer.EndDrawUI();
+
+        Renderer.FinalizeDraw();
     }
 
     static void LoadLevel(LDtkLevel level)
@@ -220,126 +419,55 @@ public class Main : Game
         var dummy = Enemy.CreateDirect(EnemyType.Dummy, new(24, 48), Vector2.Zero);
     }
 
-    protected override void Update(GameTime gameTime)
+    static float transitionProgress;
+    static int transitionDirection = 0;
+    static float currentFadeTime = 0;
+    static FadeType fadeType = FadeType.Beno;
+    static CoroutineHandle fadeHandler;
+
+    public enum FadeType
     {
-        Input.RefreshKeyboardState();
-        Input.RefreshGamePadState(PlayerIndex.One);
-        Input.RefreshMouseState();
-
-        _coroutineRunner.Update(1/60f);
-
-        if(Input.GetPressed(Keys.F1))
-        {
-            debugMode = !debugMode;
-        }
-
-        if(debugMode)
-        {
-            if(Input.GetPressed(Keys.F2))
-            {
-                drawTileCheckingAreas = !drawTileCheckingAreas;
-            }
-            if(Input.GetPressed(Keys.F3))
-            {
-                drawLevelPadding = !drawLevelPadding;
-            }
-            if(Input.GetPressed(Keys.F4))
-            {
-                NextRoom(0);
-            }
-        }
-
-        if(Input.GetPressed(Buttons.Back, PlayerIndex.One) || Input.GetPressed(Keys.Escape))
-            Exit();
-
-        _world.NumCollisionChecks = 0;
-        _world.Update();
-
-        Pickup.Update();
-
-        Player.Update();
-
-        Projectile.Update();
-
-        Enemy.Update();
-
-        Trigger.Update();
-
-        Camera.Zoom = 1;
-        Camera.Position += (Player.Center.ToVector2() + new Vector2(-ScreenSize.X / 2f, -ScreenSize.Y / 2f) - Camera.Position) / 4f;
-
-        Vector2 padding = new Vector2(World.TileSize, 0);
-        Vector2 min = padding;
-        Vector2 max = (World.Bounds.Size.ToVector2() * World.TileSize) - ScreenSize.ToVector2() - Vector2.UnitY * (_world.Height <= 23 ? (World.TileSize / 2) : 0) - padding;
-
-        if(drawLevelPadding && debugMode)
-        {
-            min -= padding;
-            max += padding;
-        }
-
-        Camera.Position = Vector2.Clamp(Camera.Position, min, max);
-
-        Camera.Update();
-
-        ElapsedTime++;
-
-        base.Update(gameTime);
+        Basic,
+        Throwback,
+        Wide,
+        LaggyCircle,
+        Beno,
+        VerticalBars
     }
 
-    protected override void Draw(GameTime gameTime)
+    public static void FadeToNextRoom(int room = -1, FadeType transitionStyle = FadeType.Beno, float fadeTime = 5)
     {
-        Renderer.BeginDraw(SamplerState.PointWrap, _camera.Transform);
+        if(Coroutines.IsRunning(fadeHandler))
+            Coroutines.Stop(fadeHandler);
 
-        lDtkRenderer.RenderPrerenderedLevel(lDtkWorld.Levels[RoomIndex]);
+        fadeType = transitionStyle;
+        currentFadeTime = fadeTime;
+        fadeHandler = Coroutines.Run(TransitionFadeOut(room, fadeTime));
+    }
 
-        _world.Draw();
-
-        Projectile.Draw();
-
-        Enemy.Draw();
-
-        Player.Draw();
-
-        if(debugMode && drawLevelPadding)
+    static IEnumerator TransitionFadeOut(int room, float fadeTime)
+    {
+        transitionDirection = 1;
+        while(transitionProgress < 1)
         {
-            Renderer.SpriteBatch.Base.Draw(OnePixel, new Rectangle(0, 0, World.TileSize, World.TileSize * World.Height), Color.Red * 0.25f);
-            Renderer.SpriteBatch.Base.Draw(OnePixel, new Rectangle((World.TileSize * World.Width) - World.TileSize, 0, World.TileSize, World.TileSize * World.Height), Color.Red * 0.25f);
+            transitionProgress = MathHelper.Min(1, transitionProgress + MathHelper.Max((1 - transitionProgress) / fadeTime, 0.0025f));
+
+            yield return null;
         }
 
-        Trigger.Draw();
+        yield return 2/60f;
 
-        Renderer.EndDraw();
-        Renderer.BeginDrawUI();
+        NextRoom(room);
 
-        _graphicsCoroutineRunner.Update(1/60f);
-
-        if(Debug.Enabled)
+        transitionDirection = -1;
+        while(transitionProgress > 0)
         {
-            static void DrawTexts(Vector2 offset, Color color)
-            {
-                Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFontBold, $"{ScreenSize.X}x{ScreenSize.Y}*{Renderer.PixelScale}", new Vector2(10, ScreenSize.Y - 10) + offset, color, 4, 0, Vector2.UnitY * 12, 1);
-                Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{MousePosition.X}, {MousePosition.Y}", new Vector2(10, ScreenSize.Y - 20) + offset, color, 4, 0, Vector2.UnitY * 12, 1);
+            transitionProgress = MathHelper.Max(0, transitionProgress - MathHelper.Max(transitionProgress / fadeTime, 0.0025f));
 
-                Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{_world.NumCollisionChecks}", new Vector2(128, ScreenSize.Y - 10) + offset, color.Subtract(Color.White), 4, 0, Vector2.UnitY * 12, 1);
-
-                Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{LastPlayerHitDamage}", new Vector2(96, ScreenSize.Y - 10) + offset, color, 4, 0, Vector2.UnitY * 12, 1);
-            }
-
-            DrawTexts(Vector2.One, Color.Black * 0.5f);
-            DrawTexts(Vector2.Zero, Color.White);
+            yield return null;
         }
 
-        Color col1 = new Color(100, 150, 200) * 1f;
-        Color col2 = new Color(100, 100, 100) * (100f / 255f);
-        Color blend = col1.AddPreserveAlpha(Color.Transparent);
-
-        Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{col1}", new Vector2(144, ScreenSize.Y - 30), col1, 4, 0, Vector2.UnitY * 12);
-        Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{col2}", new Vector2(144, ScreenSize.Y - 20), col2, 4, 0, Vector2.UnitY * 12);
-        Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{blend}", new Vector2(144, ScreenSize.Y - 10), blend, 4, 0, Vector2.UnitY * 12);
-
-        Renderer.EndDrawUI();
-        Renderer.FinalizeDraw();
+        transitionDirection = 0;
     }
 
     private static readonly List<string> missingAssets = [];

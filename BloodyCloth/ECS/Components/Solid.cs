@@ -206,5 +206,10 @@ namespace BloodyCloth.Ecs.Components
             }
             return actors;
         }
+
+        public virtual bool Intersects(Rectangle rectangle)
+        {
+            return rectangle.Intersects(WorldBoundingBox);
+        }
     }
 }
