@@ -1,0 +1,20 @@
+{
+    "InheritFrom": "paragraph_base_style.json",
+	"Default": {
+		"FillTextureFramed": {
+			"TextureId": "Textures/UI.png",
+			"InternalSourceRect": {"X": 4, "Y": 132, "Width": 88, "Height": 88},
+			"ExternalSourceRect": {"X": 0, "Y": 128, "Width": 96, "Height": 96},
+			"TextureScale": 1
+		},
+        "Padding": {"Left": 2, "Right": 2, "Top": 2, "Bottom": 3}
+	},
+    "Targeted": {
+        "TextFillColor": {"R": 255, "G": 255, "B": 255, "A": 255}
+    },
+    "Interacted": {
+        "TextFillColor": {"R": 255, "G": 255, "B": 255, "A": 255}
+    },
+    "DefaultHeight": {"Value": 24, "Units": "Pixels"},
+	"InterpolateStatesSpeed": 5
+}

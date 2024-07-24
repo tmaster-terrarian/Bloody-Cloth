@@ -86,6 +86,8 @@ public class Player : MoveableEntity
 
     public bool Dead { get; private set; }
 
+    public bool SkipStep { get; set; }
+
     int testWeaponCooldown = 0;
 
     readonly List<Texture2D> textures = [];
@@ -324,7 +326,7 @@ public class Player : MoveableEntity
 
         if(testWeaponCooldown > 0) testWeaponCooldown = MathUtil.Approach(testWeaponCooldown, 0, 1);
 
-        if(Input.GetDown(MouseButtons.LeftButton) && testWeaponCooldown == 0)
+        if(InputMapping.Fire.IsDown && testWeaponCooldown == 0)
         {
             testWeaponCooldown = 3;
 

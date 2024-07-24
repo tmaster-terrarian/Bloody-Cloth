@@ -134,6 +134,7 @@ public class PlayerInputMapping
     public MappedInput Down { get; set; } = new(Keys.S);
     public MappedInput Up { get; set; } = new(Keys.W);
     public MappedInput Jump { get; set; } = new(Keys.Space);
+    public MappedInput Fire { get; set; } = new(MouseButtons.LeftButton);
 }
 
 public class MappedInput

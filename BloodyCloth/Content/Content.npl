@@ -59,6 +59,12 @@
 			"processorParam": {
 				"Debug": "Auto"
 			}
+		},
+
+		"iguinaThemes": {
+			"path": "UIThemes/*",
+			"recursive": "True",
+			"action": "copy"
 		}
 	}
 }

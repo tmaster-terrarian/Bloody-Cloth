@@ -152,4 +152,24 @@ public static class Extensions
 
         return new Color(-(src * srcA) + dest) * destA;
     }
+
+    public static Color ToMG(this Iguina.Defs.Color igColor)
+    {
+        return new Color(igColor.R, igColor.G, igColor.B, igColor.A);
+    }
+
+    public static Vector2 ToMGVector2(this Iguina.Defs.Point igPoint)
+    {
+        return new(igPoint.X, igPoint.Y);
+    }
+
+    public static Point ToMG(this Iguina.Defs.Point igPoint)
+    {
+        return new(igPoint.X, igPoint.Y);
+    }
+
+    public static Rectangle ToMG(this Iguina.Defs.Rectangle igRect)
+    {
+        return new(igRect.X, igRect.Y, igRect.Width, igRect.Height);
+    }
 }

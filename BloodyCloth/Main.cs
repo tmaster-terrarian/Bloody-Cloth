@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text.Json;
 
@@ -9,13 +10,16 @@ using Microsoft.Xna.Framework.Input;
 using BloodyCloth.GameContent;
 using BloodyCloth.Graphics;
 using BloodyCloth.IO;
+using BloodyCloth.Utils;
 
 using Coroutines;
 
+using Iguina;
+
 using LDtk;
 using LDtk.Renderer;
-using System.Collections;
-using BloodyCloth.Utils;
+using System.IO;
+using BloodyCloth.UI;
 
 namespace BloodyCloth;
 
@@ -29,16 +33,20 @@ public class Main : Game
     static World _world;
     static Camera _camera;
     static readonly CoroutineRunner _coroutineRunner = new();
+    static UISystem _uiSystem;
 
     static LDtkFile lDtkFile;
     static LDtkWorld lDtkWorld;
     static ExampleRenderer lDtkRenderer;
+
+    static bool paused;
 
     public static Point ScreenSize => Renderer.ScreenSize;
     public static Logger Logger => _logger;
     public static World World => _world;
     public static Camera Camera => _camera;
     public static CoroutineRunner Coroutines => _coroutineRunner;
+    public static UISystem UISystem => _uiSystem;
 
     public static Point MousePosition => new(Mouse.GetState().X / Renderer.PixelScale, Mouse.GetState().Y / Renderer.PixelScale);
     public static Point MousePositionClamped => new(MathHelper.Clamp(Mouse.GetState().X / Renderer.PixelScale, 0, ScreenSize.X - 1), MathHelper.Clamp(Mouse.GetState().Y / Renderer.PixelScale, 0, ScreenSize.Y - 1));
@@ -56,6 +64,8 @@ public class Main : Game
     public static ulong ElapsedTime { get; private set; }
 
     public static int RoomIndex { get; private set; }
+
+    public static UIMenu? ActiveMenu { get; private set; }
 
     public static int LastPlayerHitDamage { get; set; }
     public static uint LastPlayerHitTarget { get; set; }
@@ -99,7 +109,7 @@ public class Main : Game
         };
 
         Content.RootDirectory = "Content";
-        IsMouseVisible = true;
+        IsMouseVisible = false;
         IsFixedTimeStep = true;
     }
 
@@ -117,7 +127,7 @@ public class Main : Game
 
         lDtkRenderer = new(Renderer.SpriteBatch.Base, Content);
 
-        lDtkFile = LDtkFile.FromFile(ProgramPath + "/Content/Levels/Level0.ldtk");
+        lDtkFile = LDtkFile.FromFile(Path.Combine(ProgramPath, "Content", "Levels", "Level0.ldtk"));
 
         lDtkWorld = lDtkFile.LoadSingleWorld();
 
@@ -142,20 +152,89 @@ public class Main : Game
 
         Defs.Initialize();
 
+        // start demo project and provide our renderer and input provider.
+        var uiThemeFolder = Path.Combine(ProgramPath, "Content", "UIThemes", "DefaultTheme");
+
+        // create ui system
+        var renderer = new UIRenderer(Content, Renderer.GraphicsDevice, uiThemeFolder);
+        var input = new UIInput();
+        _uiSystem = new UISystem(Path.Combine(uiThemeFolder, "system_style.json"), renderer, input);
+
         Player = new Player();
+    }
+
+    bool exiting = false;
+    bool checkedForExit = false;
+
+    public static void SetMenu(UIMenu instance)
+    {
+        ActiveMenu?.Destroy();
+        ActiveMenu = instance;
+    }
+
+    public static void ForceExit()
+    {
+        _instance.exiting = true;
+
+        if(_instance.checkedForExit)
+            _instance.Exit();
     }
 
     protected override void Update(GameTime gameTime)
     {
+        checkedForExit = false;
+
         Input.RefreshKeyboardState();
         Input.RefreshGamePadState(PlayerIndex.One);
         Input.RefreshMouseState();
+
+        ((UIInput)_uiSystem.Input).GetKeyboardInput(gameTime);
+        _uiSystem.Update((float)gameTime.ElapsedGameTime.TotalSeconds);
 
         _coroutineRunner.Update(1/60f);
 
         if(Input.GetPressed(Keys.F1))
         {
             debugMode = !debugMode;
+        }
+
+        if((Input.GetPressed(Buttons.Back) || Input.GetPressed(Keys.Escape)) && (transitionDirection == 0 || (transitionProgress <= 0.5f && transitionDirection == -1)))
+        {
+            if(ActiveMenu is not null)
+            {
+                if(ActiveMenu is PauseMenu pauseMenu)
+                {
+                    pauseMenu.Destroy();
+                    SetMenu(null);
+                }
+                else
+                {
+                    ActiveMenu.Destroy();
+                    SetMenu(new PauseMenu());
+                }
+            }
+            else
+            {
+                SetMenu(new PauseMenu());
+            }
+        }
+
+        if(exiting)
+        {
+            Exit();
+            base.Update(gameTime);
+            return;
+        }
+        else
+            checkedForExit = true;
+
+        ActiveMenu?.Update();
+
+        paused = false;
+
+        if(ActiveMenu is not null && ActiveMenu.PauseWhileOpen)
+        {
+            paused = true;
         }
 
         if(debugMode)
@@ -168,14 +247,17 @@ public class Main : Game
             {
                 drawLevelPadding = !drawLevelPadding;
             }
-            if(Input.GetPressed(Keys.F4))
+            if(Input.GetPressed(Keys.F4) && !paused)
             {
                 FadeToNextRoom(0, FadeType.Throwback);
             }
         }
 
-        if(Input.GetPressed(Buttons.Back, PlayerIndex.One) || Input.GetPressed(Keys.Escape))
-            Exit();
+        if(paused)
+        {
+            base.Update(gameTime);
+            return;
+        }
 
         _world.NumCollisionChecks = 0;
         _world.Update();
@@ -239,7 +321,20 @@ public class Main : Game
         Renderer.EndDraw();
         Renderer.BeginDrawUI();
 
+        ActiveMenu?.PreDraw();
+
+        Renderer.SpriteBatch.Base.End(); // this is hacky as shit, send help
+
+        var renderer = (UIRenderer)_uiSystem.Renderer;
+        renderer.StartFrame();
+        _uiSystem.Draw();
+        renderer.EndFrame();
+
+        Renderer.SpriteBatch.Base.Begin(samplerState: SamplerState.PointWrap);
+
         // HUD
+
+        ActiveMenu?.PostDraw();
 
         if(transitionProgress > 0)
         {

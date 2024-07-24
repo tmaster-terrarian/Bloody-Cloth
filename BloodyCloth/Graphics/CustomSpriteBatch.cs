@@ -21,6 +21,8 @@ public class CustomSpriteBatch
 
     public GraphicsDevice GraphicsDevice { get; }
 
+    public bool Busy { get; private set; }
+
     private readonly struct NormalsQueueItem(Texture2D texture, Rectangle destinationRectangle, Rectangle sourceRectangle, Color color, float rotation, Vector2 origin, SpriteEffects effects, float layerDepth)
     {
         public Texture2D Texture { get; } = texture;
@@ -165,6 +167,7 @@ public class CustomSpriteBatch
 
     public void FinalizeDraw()
     {
+        Busy = false;
         Renderer.GraphicsDevice.SetRenderTarget(normalMap);
         Renderer.GraphicsDevice.Clear(new Color(128, 128, 255, 255));
 
