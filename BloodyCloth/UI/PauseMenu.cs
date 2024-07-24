@@ -161,14 +161,21 @@ public class PauseMenu : UIMenu
         });
     }
 
-    private Iguina.Entities.Entity CreateSettingsSubmenu(SettingsSubmenus menu)
+    private void CreateSettingsSubmenu(SettingsSubmenus menu)
     {
         settingsSubmenu?.RemoveSelf();
         settingsSubmenu = null;
 
-        return menu switch
+        switch(menu)
         {
-            _ => new Iguina.Entities.Entity(UISystem, null),
+            case SettingsSubmenus.Gameplay:
+            case SettingsSubmenus.Audio:
+            case SettingsSubmenus.Display:
+            default:
+                settingsSubmenuHolder.AddChild(
+                    new Iguina.Entities.Entity(UISystem, null).Builder()
+                );
+                break;
         };
     }
 }
