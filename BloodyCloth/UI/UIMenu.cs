@@ -17,7 +17,7 @@ public abstract class UIMenu
         CreateSelf();
     }
 
-    public virtual void CreateSelf()
+    protected virtual void CreateSelf()
     {
         Main.UISystem.Root.AddChild(Root);
     }

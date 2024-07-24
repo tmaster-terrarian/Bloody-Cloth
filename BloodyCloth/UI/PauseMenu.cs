@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework;
 using BloodyCloth.Graphics;
 
 using Iguina.Entities;
+using System.Collections.Generic;
 
 namespace BloodyCloth.UI;
 
@@ -12,7 +13,7 @@ public class PauseMenu : UIMenu
 
     public Iguina.Entities.Entity CurrentPage => currentPage;
 
-    public override void CreateSelf()
+    protected override void CreateSelf()
     {
         PauseWhileOpen = true;
 
@@ -88,9 +89,17 @@ public class PauseMenu : UIMenu
         );
     }
 
+    private Iguina.Entities.Entity settingsSubmenuHolder;
+    private Iguina.Entities.Entity settingsSubmenu;
+
     private void CreateSettingsMenu()
     {
         int padding = 4;
+
+        settingsSubmenuHolder = new Panel(UISystem) {
+            Anchor = Iguina.Defs.Anchor.CenterRight
+        };
+        settingsSubmenuHolder.Size.SetPercents((1 - 2/12f) * 100 * (1 - 4f/Main.ScreenSize.X), 100);
 
         SetPage(
             new Panel(UISystem) {
@@ -109,9 +118,13 @@ public class PauseMenu : UIMenu
                 }
                 .Builder()
                 .SetSizeInPercents(2/12f * 100, 100)
+                .AddChild(CreateSettingsSubmenuOption(SettingsSubmenus.Gameplay, true))
+                .AddChild(CreateSettingsSubmenuOption(SettingsSubmenus.Audio))
+                .AddChild(CreateSettingsSubmenuOption(SettingsSubmenus.Display))
                 .AddChild(
                     new Button(UISystem, "Back") {
-                        Anchor = Iguina.Defs.Anchor.BottomCenter
+                        Anchor = Iguina.Defs.Anchor.BottomCenter,
+                        ExclusiveSelection = false
                     }
                     .Builder()
                     .SetEventListener(EntityEventType.OnClick, entity => {
@@ -119,13 +132,43 @@ public class PauseMenu : UIMenu
                     })
                 )
             )
-            .AddChild(
-                new Panel(UISystem) {
-                    Anchor = Iguina.Defs.Anchor.CenterRight
-                }
-                .Builder()
-                .SetSizeInPercents((1 - 2/12f) * 100 * (1 - 4f/Main.ScreenSize.X), 100)
-            )
+            .AddChild(settingsSubmenuHolder)
         );
+
+        CreateSettingsSubmenu(SettingsSubmenus.Gameplay);
+    }
+
+    enum SettingsSubmenus
+    {
+        Gameplay,
+        Audio,
+        Display
+    }
+
+    private EntityBuilder<Button> CreateSettingsSubmenuOption(SettingsSubmenus menu, bool first = false)
+    {
+        return new Button(UISystem, menu.ToString())
+        {
+            Anchor = Iguina.Defs.Anchor.AutoLTR,
+            ToggleCheckOnClick = true,
+            CanClickToUncheck = false,
+            ExclusiveSelection = true,
+            Checked = first
+        }
+        .Builder()
+        .SetEventListener(EntityEventType.OnClick, entity => {
+            CreateSettingsSubmenu(menu);
+        });
+    }
+
+    private Iguina.Entities.Entity CreateSettingsSubmenu(SettingsSubmenus menu)
+    {
+        settingsSubmenu?.RemoveSelf();
+        settingsSubmenu = null;
+
+        return menu switch
+        {
+            _ => new Iguina.Entities.Entity(UISystem, null),
+        };
     }
 }
