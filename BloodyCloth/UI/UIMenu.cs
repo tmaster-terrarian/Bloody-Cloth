@@ -4,6 +4,10 @@ namespace BloodyCloth.UI;
 
 public abstract class UIMenu
 {
+    Iguina.Entities.Entity currentPage;
+
+    public Iguina.Entities.Entity CurrentPage => currentPage;
+
     public UISystem UISystem { get; }
     public Iguina.Entities.Entity Root { get; }
 
@@ -29,7 +33,6 @@ public abstract class UIMenu
 
     public virtual void HandleBackButton()
     {
-        Destroy();
         if(Main.ActiveMenu == this) Main.SetMenu(null);
     }
 
@@ -38,4 +41,22 @@ public abstract class UIMenu
     public virtual void PostDraw() {}
 
     public virtual void PreDraw() {}
+
+    protected void SetPage(Iguina.Entities.Entity page)
+    {
+        if(currentPage is not null)
+        {
+            if(!currentPage.IsCurrentlyLocked())
+                currentPage.Locked = true;
+
+            currentPage.RemoveSelf();
+        }
+
+        currentPage = page;
+
+        if(page is not null)
+            Root.AddChild(currentPage);
+    }
+
+    protected void SetPage<T>(EntityBuilder<T> builder) where T : Iguina.Entities.Entity => SetPage(builder.Build());
 }

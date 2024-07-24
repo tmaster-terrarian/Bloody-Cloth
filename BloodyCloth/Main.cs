@@ -70,6 +70,8 @@ public class Main : Game
     public static int LastPlayerHitDamage { get; set; }
     public static uint LastPlayerHitTarget { get; set; }
 
+    public static bool InMenu { get; private set; } = false;
+
     public static class AppMetadata
     {
         public const string Name = "BloodyCloth";
@@ -202,17 +204,9 @@ public class Main : Game
         {
             if(ActiveMenu is not null)
             {
-                if(ActiveMenu is PauseMenu pauseMenu)
-                {
-                    pauseMenu.HandleBackButton();
-                }
-                else
-                {
-                    ActiveMenu.Destroy();
-                    SetMenu(new PauseMenu());
-                }
+                ActiveMenu.HandleBackButton();
             }
-            else
+            else if(!InMenu)
             {
                 SetMenu(new PauseMenu());
             }
