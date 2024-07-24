@@ -61,8 +61,8 @@
 			}
 		},
 
-		"iguinaThemes": {
-			"path": "UIThemes/*",
+		"iguina": {
+			"path": "UI/*",
 			"recursive": "True",
 			"action": "copy"
 		}

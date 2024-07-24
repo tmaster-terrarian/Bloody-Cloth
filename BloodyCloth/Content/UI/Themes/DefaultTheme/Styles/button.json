@@ -8,7 +8,7 @@
 			"TextureScale": 1
 		},
         "TextAlignment": "Center",
-        "Padding": {"Left": 4, "Right": 4, "Top": 10, "Bottom": 0}
+        "Padding": {"Left": 2, "Right": 2, "Top": 2, "Bottom": 2}
 	},
     "Targeted": {
 		"FillTextureFramed": {
@@ -33,7 +33,7 @@
 	"Disabled": {
 		"EffectIdentifier": "disabled"
 	},
+    "DefaultHeight": {"Value": 24, "Units": "Pixels"},
     "DefaultTextAnchor": "Center",
-	"DefaultHeight": {"Value": 26, "Units": "Pixels"},
 	"InterpolateStatesSpeed": 5
 }

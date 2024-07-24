@@ -171,14 +171,13 @@ public class UIRenderer(ContentManager content, GraphicsDevice device, string as
 
     /// <inheritdoc/>
 
-    [Obsolete("Note: currently we render outline in a primitive way. To improve performance and remove some visual artifact during transitions, its best to implement a shader that draw text with outline properly.")]
     public void DrawText(string? effectIdentifier, string text, string? fontId, int fontSize, Point position, Color fillColor, Color outlineColor, int outlineWidth, float spacing)
     {
         SetEffect(effectIdentifier);
 
         var spriteFont = GetFont(fontId);
         spriteFont.Spacing = spacing - 1f;
-        float scale = (fontSize / 24f) * GlobalTextScale; // 24 is the default font sprite size. you need to adjust this to your own sprite font.
+        float scale = (fontSize / 12f) * GlobalTextScale; // 24 is the default font sprite size. you need to adjust this to your own sprite font.
 
         // draw outline
         if ((outlineColor.A > 0) && (outlineWidth > 0))

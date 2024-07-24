@@ -153,7 +153,7 @@ public class Main : Game
         Defs.Initialize();
 
         // start demo project and provide our renderer and input provider.
-        var uiThemeFolder = Path.Combine(ProgramPath, "Content", "UIThemes", "DefaultTheme");
+        var uiThemeFolder = Path.Combine(ProgramPath, "Content", "UI", "Themes", "DefaultTheme");
 
         // create ui system
         var renderer = new UIRenderer(Content, Renderer.GraphicsDevice, uiThemeFolder);
@@ -204,8 +204,7 @@ public class Main : Game
             {
                 if(ActiveMenu is PauseMenu pauseMenu)
                 {
-                    pauseMenu.Destroy();
-                    SetMenu(null);
+                    pauseMenu.HandleBackButton();
                 }
                 else
                 {
@@ -321,6 +320,23 @@ public class Main : Game
         Renderer.EndDraw();
         Renderer.BeginDrawUI();
 
+        if(Debug.Enabled)
+        {
+            static void DrawTexts(Vector2 offset, Color color)
+            {
+                Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFontBold, $"{ScreenSize.X}x{ScreenSize.Y}*{Renderer.PixelScale}", new Vector2(10, ScreenSize.Y - 10) + offset, color, 4, 0, Vector2.UnitY * 12, 1);
+
+                Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{MousePosition.X}, {MousePosition.Y}", new Vector2(10, ScreenSize.Y - 20) + offset, color, 4, 0, Vector2.UnitY * 12, 1);
+
+                Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{_world.NumCollisionChecks}", new Vector2(128, ScreenSize.Y - 10) + offset, color, 4, 0, Vector2.UnitY * 12, 1);
+
+                Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{LastPlayerHitDamage}", new Vector2(96, ScreenSize.Y - 10) + offset, color, 4, 0, Vector2.UnitY * 12, 1);
+            }
+
+            DrawTexts(Vector2.One, Color.Black * 0.5f);
+            DrawTexts(Vector2.Zero, Color.White);
+        }
+
         ActiveMenu?.PreDraw();
 
         Renderer.SpriteBatch.Base.End(); // this is hacky as shit, send help
@@ -403,23 +419,6 @@ public class Main : Game
                     }
                     break;
             }
-        }
-
-        if(Debug.Enabled)
-        {
-            static void DrawTexts(Vector2 offset, Color color)
-            {
-                Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFontBold, $"{ScreenSize.X}x{ScreenSize.Y}*{Renderer.PixelScale}", new Vector2(10, ScreenSize.Y - 10) + offset, color, 4, 0, Vector2.UnitY * 12, 1);
-
-                Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{MousePosition.X}, {MousePosition.Y}", new Vector2(10, ScreenSize.Y - 20) + offset, color, 4, 0, Vector2.UnitY * 12, 1);
-
-                Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{_world.NumCollisionChecks}", new Vector2(128, ScreenSize.Y - 10) + offset, color, 4, 0, Vector2.UnitY * 12, 1);
-
-                Renderer.SpriteBatch.Base.DrawStringSpacesFix(Renderer.RegularFont, $"{LastPlayerHitDamage}", new Vector2(96, ScreenSize.Y - 10) + offset, color, 4, 0, Vector2.UnitY * 12, 1);
-            }
-
-            DrawTexts(Vector2.One, Color.Black * 0.5f);
-            DrawTexts(Vector2.Zero, Color.White);
         }
 
         fpsCounter++;

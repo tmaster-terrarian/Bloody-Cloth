@@ -27,6 +27,12 @@ public abstract class UIMenu
         Root.RemoveSelf();
     }
 
+    public virtual void HandleBackButton()
+    {
+        Destroy();
+        if(Main.ActiveMenu == this) Main.SetMenu(null);
+    }
+
     public virtual void Update() {}
 
     public virtual void PostDraw() {}
