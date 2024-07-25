@@ -6,9 +6,9 @@
 			"ExternalSourceRect": {"X": 0, "Y": 112, "Width": 80, "Height": 7},
 			"TextureScale": 1
 		},
-        "Padding": {"Left": 40, "Right": 40, "Top": 0, "Bottom": 0},
-        "MarginBefore": {"X": 0, "Y": 18},
-        "MarginAfter": {"X": 0, "Y": 18}
+        "Padding": {"Left": 4, "Right": 5, "Top": 0, "Bottom": 0},
+        "MarginBefore": {"X": 1, "Y": 12},
+        "MarginAfter": {"X": 1, "Y": 12}
 	},
     "Targeted": {
 		"FillTextureFramed": {
@@ -30,7 +30,7 @@
 		"EffectIdentifier": "disabled"
 	},
     "DefaultWidth": {"Value": 100, "Units": "PercentOfParent"},
-    "DefaultHeight": {"Value": 21, "Units": "Pixels"},
+    "DefaultHeight": {"Value": 7, "Units": "Pixels"},
 	"InterpolateStatesSpeed": 5,
-	"InterpolateOffsetsSpeed": 10
+	"InterpolateOffsetsSpeed": 15
 }

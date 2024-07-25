@@ -7,7 +7,7 @@
 			"TextureScale": 1
 		},
         "TextAlignment": "Left",
-        "Padding": {"Left": 30, "Right": 0, "Top": 0, "Bottom": 0}
+        "Padding": {"Left": 18, "Right": 0, "Top": 0, "Bottom": 0}
 	},
     "Targeted": {
 		"Icon": {
@@ -28,5 +28,6 @@
     "Checked": {
 	},
     "DefaultTextAnchor": "CenterLeft",
-	"InterpolateStatesSpeed": 5
+	"InterpolateStatesSpeed": 5,
+	"DefaultHeight": {"Value": 18, "Units": "Pixels"}
 }

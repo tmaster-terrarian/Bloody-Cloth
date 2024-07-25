@@ -116,24 +116,177 @@ public class SettingsMenu : UIMenu
         _lastSelectedSettingsSubmenu = menu;
 
         settingsSubmenu?.RemoveSelf();
-        settingsSubmenu = settingsSubmenuHolder.AddChild(
-            menu switch
-            {
-                SettingsSubmenus.Gameplay =>
+        switch(menu)
+        {
+            case SettingsSubmenus.Gameplay:
+                settingsSubmenu = settingsSubmenuHolder.AddChild(
                     new Iguina.Entities.Entity(UISystem, null).Builder()
+
                     .AddChild(new Button(UISystem, "test"))
-                    .AddChild(new Button(UISystem, "test2")),
-                SettingsSubmenus.Audio =>
+
+                    .AddChild(new Button(UISystem, "test2"))
+                );
+                break;
+            case SettingsSubmenus.Audio:
+                var masterPercent = new Paragraph(UISystem, $"{(int)(GameConfig.Audio.MasterVolume * 100)}%") {
+                    ShrinkWidthToMinimalSize = false,
+                    AutoWidth = false,
+                    Anchor = Iguina.Defs.Anchor.AutoInlineLTR
+                };
+
+                var soundPercent = new Paragraph(UISystem, $"{(int)(GameConfig.Audio.SoundVolume * 100)}%") {
+                    ShrinkWidthToMinimalSize = false,
+                    AutoWidth = false,
+                    Anchor = Iguina.Defs.Anchor.AutoInlineLTR
+                };
+
+                var musicPercent = new Paragraph(UISystem, $"{(int)(GameConfig.Audio.MusicVolume * 100)}%") {
+                    ShrinkWidthToMinimalSize = false,
+                    AutoWidth = false,
+                    Anchor = Iguina.Defs.Anchor.AutoInlineLTR
+                };
+
+                settingsSubmenu = settingsSubmenuHolder.AddChild(
                     new Iguina.Entities.Entity(UISystem, null).Builder()
-                    .AddChild(new Paragraph(UISystem, "hello whats up"))
-                    .AddChild(new Button(UISystem, "what")),
-                SettingsSubmenus.Display =>
-                    new Iguina.Entities.Entity(UISystem, null).Builder()
+
+                    .AddChild(
+                        new Checkbox(UISystem, "Mute when unfocused") {
+                            Anchor = Iguina.Defs.Anchor.AutoInlineLTR,
+                            Checked = GameConfig.Audio.MuteWhenUnfocused
+                        }
+                        .Builder()
+                        .SetEventListener(EntityEventType.OnValueChanged, entity => {
+                            GameConfig.Audio.MuteWhenUnfocused = (entity as Checkbox).Checked;
+                        })
+                    )
+
+                    .AddChild(new HorizontalLine(UISystem))
+
+                    .AddChild(
+                        new Paragraph(UISystem, "Master Volume") {
+                            ShrinkWidthToMinimalSize = false,
+                            AutoWidth = false
+                        }
+                        .Builder()
+                        .SetSizeInPercents(19, null)
+                    )
+                    .AddChild(
+                        new Slider(UISystem) {
+                            Anchor = Iguina.Defs.Anchor.AutoInlineLTR,
+                            MaxValue = 100,
+                            StepsCount = 100,
+                            MouseWheelStep = 10,
+                            ValueSafe = (int)(GameConfig.Audio.MasterVolume * 100),
+                        }
+                        .Builder()
+                        .Modify(entity => {
+                            entity.Offset.Y.SetPixels(4);
+                        })
+                        .SetSizeInPercents(70, null)
+                        .SetEventListener(EntityEventType.OnValueChanged, entity => {
+                            GameConfig.Audio.MasterVolume = (entity as Slider).ValuePercent;
+                            masterPercent.Text = $"{(entity as Slider).Value}%";
+                        })
+                    )
+                    .AddChild(
+                        masterPercent.Builder()
+                        .Modify(entity => {
+                            entity.Offset.Y.SetPixels(-4);
+                        })
+                        .SetSizeInPercents(9, null)
+                        .OverrideStyles(styles => {
+                            styles.TextAlignment = Iguina.Defs.TextAlignment.Right;
+                        })
+                    )
+
                     .AddChild(new RowsSpacer(UISystem))
-                    .AddChild(new Paragraph(UISystem, "idk")),
-                _ =>
-                    new Iguina.Entities.Entity(UISystem, null).Builder(),
-            }
-        );
+
+                    .AddChild(
+                        new Paragraph(UISystem, "Sound Volume") {
+                            ShrinkWidthToMinimalSize = false,
+                            AutoWidth = false
+                        }
+                        .Builder()
+                        .SetSizeInPercents(19, null)
+                    )
+                    .AddChild(
+                        new Slider(UISystem) {
+                            Anchor = Iguina.Defs.Anchor.AutoInlineLTR,
+                            MaxValue = 100,
+                            StepsCount = 100,
+                            MouseWheelStep = 10,
+                            ValueSafe = (int)(GameConfig.Audio.SoundVolume * 100),
+                        }
+                        .Builder()
+                        .Modify(entity => {
+                            entity.Offset.Y.SetPixels(4);
+                        })
+                        .SetSizeInPercents(70, null)
+                        .SetEventListener(EntityEventType.OnValueChanged, entity => {
+                            GameConfig.Audio.SoundVolume = (entity as Slider).ValuePercent;
+                            soundPercent.Text = $"{(entity as Slider).Value}%";
+                        })
+                    )
+                    .AddChild(
+                        soundPercent.Builder()
+                        .Modify(entity => {
+                            entity.Offset.Y.SetPixels(-4);
+                        })
+                        .SetSizeInPercents(9, null)
+                        .OverrideStyles(styles => {
+                            styles.TextAlignment = Iguina.Defs.TextAlignment.Right;
+                        })
+                    )
+
+                    .AddChild(new RowsSpacer(UISystem))
+
+                    .AddChild(
+                        new Paragraph(UISystem, "Music Volume") {
+                            ShrinkWidthToMinimalSize = false,
+                            AutoWidth = false
+                        }
+                        .Builder()
+                        .SetSizeInPercents(19, null)
+                    )
+                    .AddChild(
+                        new Slider(UISystem) {
+                            Anchor = Iguina.Defs.Anchor.AutoInlineLTR,
+                            MaxValue = 100,
+                            StepsCount = 100,
+                            MouseWheelStep = 10,
+                            ValueSafe = (int)(GameConfig.Audio.MusicVolume * 100)
+                        }
+                        .Builder()
+                        .Modify(entity => {
+                            entity.Offset.Y.SetPixels(4);
+                        })
+                        .SetSizeInPercents(70, null)
+                        .SetEventListener(EntityEventType.OnValueChanged, entity => {
+                            GameConfig.Audio.MusicVolume = (entity as Slider).ValuePercent;
+                            musicPercent.Text = $"{(entity as Slider).Value}%";
+                        })
+                    )
+                    .AddChild(
+                        musicPercent.Builder()
+                        .Modify(entity => {
+                            entity.Offset.Y.SetPixels(-4);
+                        })
+                        .SetSizeInPercents(9, null)
+                        .OverrideStyles(styles => {
+                            styles.TextAlignment = Iguina.Defs.TextAlignment.Right;
+                        })
+                    )
+                );
+                break;
+            case SettingsSubmenus.Display:
+                settingsSubmenu = settingsSubmenuHolder.AddChild(
+                    new Iguina.Entities.Entity(UISystem, null).Builder()
+                    .AddChild(new Paragraph(UISystem, "idk"))
+                );
+                break;
+            default:
+                settingsSubmenu = settingsSubmenuHolder.AddChild(new Iguina.Entities.Entity(UISystem, null).Builder());
+                break;
+        }
     }
 }

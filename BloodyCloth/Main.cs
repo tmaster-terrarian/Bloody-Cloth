@@ -240,9 +240,16 @@ public class Main : Game
             {
                 drawLevelPadding = !drawLevelPadding;
             }
-            if(Input.GetPressed(Keys.F4) && !paused)
+            if(Input.GetPressed(Keys.F4))
             {
-                FadeToNextRoom(0, FadeType.Throwback);
+                if(!paused)
+                {
+                    FadeToNextRoom(0, FadeType.Throwback);
+                }
+                else
+                {
+                    UISystem.DebugRenderEntities = !UISystem.DebugRenderEntities;
+                }
             }
         }
 

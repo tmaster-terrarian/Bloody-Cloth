@@ -20,7 +20,7 @@
         "Scale": 1,
         "SourceRect": {"X": 0, "Y": 32, "Width": 16, "Height": 16}
     },
-	"RowSpaceHeight": 14,
+	"RowSpaceHeight": 6,
     "TextScale": 1,
     "CursorScale": 1,
 	"TimeToLockInteractiveState": 0.135,
