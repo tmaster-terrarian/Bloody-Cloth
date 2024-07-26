@@ -142,14 +142,16 @@ public class Projectile : MoveableEntity
                     () => {
                         if(projectile.DestroyOnCollisionWithWorld) projectile.Kill();
 
-                        projectile.velocity.X = 0;
+                        if(projectile.HasValidType)
+                            Defs.ProjectileDefs[projectile.defId].OnCollideX(projectile);
                     }
                 );
                 projectile.MoveY(projectile.velocity.Y,
                     () => {
                         if(projectile.DestroyOnCollisionWithWorld) projectile.Kill();
 
-                        projectile.velocity.Y = 0;
+                        if(projectile.HasValidType)
+                            Defs.ProjectileDefs[projectile.defId].OnCollideY(projectile);
                     }
                 );
             }

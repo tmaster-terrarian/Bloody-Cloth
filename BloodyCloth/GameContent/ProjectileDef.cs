@@ -84,10 +84,21 @@ public class ProjectileDef : AbstractDef, IDealsDamageContentDef
     }
 
     public virtual void OnDestroy(Projectile projectile) {}
+
+    public virtual void OnCollideX(Projectile projectile)
+    {
+        projectile.velocity.X = 0;
+    }
+
+    public virtual void OnCollideY(Projectile projectile)
+    {
+        projectile.velocity.Y = 0;
+    }
 }
 
 public enum ProjectileType
 {
     Invalid = -1,
     CrossbowBolt,
+    ShittyParticle,
 }

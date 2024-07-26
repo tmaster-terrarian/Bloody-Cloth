@@ -294,8 +294,6 @@ public class Main : Game
         base.Update(gameTime);
     }
 
-    int fpsCounter = 0;
-
     protected override void Draw(GameTime gameTime)
     {
         Renderer.BeginDraw(SamplerState.PointWrap, _camera.Transform);
@@ -422,12 +420,7 @@ public class Main : Game
             }
         }
 
-        fpsCounter++;
-        if(fpsCounter >= 15)
-        {
-            Window.Title = $"Bloody Cloth {AppMetadata.Version} [{fpsCounter * 4} FPS @ {(GC.GetTotalMemory(false) / 1048576f).ToString("F")} MB]";
-            fpsCounter = 0;
-        }
+        Window.Title = $"Bloody Cloth {AppMetadata.Version} [{(int)(1 / gameTime.ElapsedGameTime.TotalSeconds)} FPS @ {(GC.GetTotalMemory(false) / 1048576f).ToString("F")} MB]";
 
         Renderer.EndDrawUI();
 

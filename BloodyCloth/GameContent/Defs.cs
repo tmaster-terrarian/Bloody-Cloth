@@ -35,6 +35,15 @@ public static class Defs
             GravityDelay = 10,
             Gravity = 0.15f,
         });
+
+        ProjectileDefs.Add(ProjectileType.ShittyParticle, new Projectiles.ShittyParticle {
+            Name = "ShittyParticle",
+            TexturePath = "Projectiles/ShittyParticle",
+            Gravity = 0.15f,
+            CanHurtEnemy = false,
+            CanHurtPlayer = false,
+            Size = new(2, 2)
+        });
     }
 
     private static void CreateWeapons()
