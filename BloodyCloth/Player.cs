@@ -569,25 +569,19 @@ public class Player : MoveableEntity
 
 public class PlayerLoadout
 {
-    private int _selectedWeapon;
+    private int _selectedSpell;
 
-    public WeaponType[] Weapons { get; } = new WeaponType[2];
     public SpellType[] Spells { get; } = new SpellType[3];
-
-    public WeaponType PrimaryWeapon => Weapons[0];
-    public WeaponType SecondaryWeapon => Weapons[1];
-
-    public bool HasWeapon => PrimaryWeapon > WeaponType.Invalid || SecondaryWeapon > WeaponType.Invalid;
 
     public bool HasSpell => Spells[0] > SpellType.Invalid || Spells[1] > SpellType.Invalid || Spells[2] > SpellType.Invalid;
 
-    public int SelectedWeaponSlot
+    public int SelectedSpellSlot
     {
-        get => _selectedWeapon;
+        get => _selectedSpell;
         set {
-            _selectedWeapon = value % Weapons.Length;
+            _selectedSpell = value % Spells.Length;
         }
     }
 
-    public WeaponType SelectedWeapon => Weapons[_selectedWeapon];
+    public SpellType SelectedSpell => Spells[_selectedSpell];
 }
