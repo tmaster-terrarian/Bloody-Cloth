@@ -11,6 +11,8 @@ public abstract class MoveableEntity : Entity
     private float yRemainder;
     private float xRemainder;
 
+    protected Vector2 RemainderPosition => new(xRemainder, yRemainder);
+
 	public bool NudgeOnMove { get; set; } = true;
 
 	public virtual bool NoCollide { get; set; }
@@ -71,7 +73,7 @@ public abstract class MoveableEntity : Entity
             while(move != 0)
             {
                 bool col1 = CheckColliding((sign >= 0 ? RightEdge : LeftEdge).Shift(new(sign, 0)));
-                if(col1 && !CheckColliding((sign >= 0 ? RightEdge : LeftEdge).Shift(new(sign, -1)), true) && NudgeOnMove)
+                if(NudgeOnMove && col1 && !CheckColliding((sign >= 0 ? RightEdge : LeftEdge).Shift(new(sign, -1)), true))
                 {
                     // slope up
                     position.X += sign;
@@ -80,7 +82,7 @@ public abstract class MoveableEntity : Entity
                 }
                 else if(!col1)
                 {
-                    if(OnGround && NudgeOnMove)
+                    if(NudgeOnMove && OnGround)
                     {
                         // slope down
                         if(!CheckColliding(BottomEdge.Shift(new(sign, 1))) && CheckColliding(BottomEdge.Shift(new(sign, 2))))

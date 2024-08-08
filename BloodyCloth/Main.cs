@@ -296,6 +296,8 @@ public class Main : Game
 
     protected override void Draw(GameTime gameTime)
     {
+        Player.PreDraw();
+
         Renderer.BeginDraw(SamplerState.PointWrap, _camera.Transform);
 
         lDtkRenderer.RenderPrerenderedLevel(lDtkWorld.Levels[RoomIndex]);

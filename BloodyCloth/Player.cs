@@ -54,6 +54,8 @@ public class Player : MoveableEntity
     int bonusHp = 0;
     int shieldIFrames = 0;
 
+    readonly Experimental.VerletRope verletRope;
+
     readonly PlayerInputMapping inputMapping = new PlayerInputMapping {
         // rebind here with Name = MappedInput
     };
@@ -119,6 +121,11 @@ public class Player : MoveableEntity
         addTex("run", 6);
 
         renderTarget = new(Renderer.GraphicsDevice, Renderer.ScreenSize.X, Renderer.ScreenSize.Y);
+
+        verletRope = new(this, 10)
+        {
+            EndColor = new(100, 100, 100)
+        };
     }
 
     void AddTexture(Texture2D texture, int frameCount = 1)
@@ -344,6 +351,10 @@ public class Player : MoveableEntity
             getPushedByEnemies = false;
         }
 
+        verletRope.position = Top.ToVector2() + new Vector2(-3 * Facing, 2);
+
+        verletRope.Update();
+
         MoveX(velocity.X, () => {
             velocity.X = 0;
         });
@@ -384,35 +395,6 @@ public class Player : MoveableEntity
                 i--;
             }
         }
-
-        #region pre-draw setup
-
-        renderTargetOffset = Main.Camera.Position;
-
-        Renderer.GraphicsDevice.SetRenderTarget(renderTarget);
-        Renderer.GraphicsDevice.Clear(Color.Transparent);
-        Renderer.SpriteBatch.Base.Begin(SpriteSortMode.Immediate, samplerState: SamplerState.PointWrap);
-
-        var texture = textures[textureIndex];
-        int width = texture.Width / frameCounts[textureIndex];
-        Rectangle drawFrame = new((int)frame * width, 0, width, texture.Height);
-
-        Renderer.SpriteBatch.Base.Draw(
-            texture,
-            Center.ToVector2() - hitboxOffset.ToVector2() - renderTargetOffset,
-            drawFrame,
-            Color,
-            Rotation,
-            new Vector2(width / 2, texture.Height / 2),
-            drawScale,
-            Facing < 0 ? SpriteEffects.FlipHorizontally : SpriteEffects.None,
-            ConvertedLayerDepth
-        );
-
-        Renderer.SpriteBatch.Base.End();
-        Renderer.GraphicsDevice.SetRenderTarget(null);
-
-        #endregion
     }
 
     private void RecalculateStats()
@@ -442,6 +424,36 @@ public class Player : MoveableEntity
             case PlayerState.Dead:
                 break;
         }
+    }
+
+    public void PreDraw()
+    {
+        renderTargetOffset = Main.Camera.Position;
+
+        Renderer.GraphicsDevice.SetRenderTarget(renderTarget);
+        Renderer.GraphicsDevice.Clear(Color.Transparent);
+        Renderer.SpriteBatch.Base.Begin(SpriteSortMode.Immediate, samplerState: SamplerState.PointWrap, transformMatrix: Main.Camera.Transform);
+
+        var texture = textures[textureIndex];
+        int width = texture.Width / frameCounts[textureIndex];
+        Rectangle drawFrame = new((int)frame * width, 0, width, texture.Height);
+
+        Renderer.SpriteBatch.Draw(
+            texture,
+            Center.ToVector2() - hitboxOffset.ToVector2(),
+            drawFrame,
+            Color,
+            Rotation,
+            new Vector2(width / 2, texture.Height / 2),
+            drawScale,
+            Facing < 0 ? SpriteEffects.FlipHorizontally : SpriteEffects.None,
+            ConvertedLayerDepth
+        );
+
+        verletRope.Draw();
+
+        Renderer.SpriteBatch.Base.End();
+        Renderer.GraphicsDevice.SetRenderTarget(null);
     }
 
     public void Draw()
@@ -525,15 +537,16 @@ public class Player : MoveableEntity
         }
     }
 
-    public void Hurt()
+    public void Hurt(int damage = 1)
     {
         if(shieldIFrames > 0 || Dead) return;
 
         if(bonusHp > 0)
         {
-            bonusHp--;
-            if(bonusHp == 0)
+            bonusHp -= damage;
+            if(bonusHp <= 0)
             {
+                bonusHp = 0;
                 shieldIFrames = 6;
             }
         }

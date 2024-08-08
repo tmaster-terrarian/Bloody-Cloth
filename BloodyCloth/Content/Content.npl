@@ -18,6 +18,11 @@
 				"TextureFormat": "Color"
 			}
 		},
+		"textureData": {
+			"path": "Images/*.json",
+			"recursive": "True",
+			"action": "copy"
+		},
 		"fonts": {
 			"path": "Fonts/*.spritefont",
 			"recursive": "True",
@@ -29,16 +34,18 @@
 				"TextureFormat": "Color"
 			}
 		},
-		// "sfx": {
-		// 	"path": "Audio/Sfx/*.wav",
-		// 	"recursive": "True",
-		// 	"action": "build",
-		// 	"importer": "WavImporter",
-		// 	"processor": "SoundEffectProcessor",
-		// 	"processorParam": {
-		// 		"Quality": "Best"
-		// 	}
-		// },
+
+		"sfx": {
+			"path": "Audio/Sfx/*.wav",
+			"recursive": "True",
+			"action": "build",
+			"importer": "WavImporter",
+			"processor": "SoundEffectProcessor",
+			"processorParam": {
+				"Quality": "Best"
+			}
+		},
+
 		"levels": {
 			"path": "Levels/*.ldtk",
 			"recursive": "True",
@@ -50,7 +57,7 @@
 			"action": "copy"
 		},
 
-		"FX": {
+		"effects": {
 			"path": "FX/*.fx",
 			"recursive": "True",
 			"action": "build",
